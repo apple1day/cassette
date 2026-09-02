@@ -35,7 +35,13 @@ struct SongsListView: View {
         }
         .task(id: container?.serverState.isOnline) {
             guard let svc = container?.libraryService else { return }
-            if viewModel == nil { viewModel = SongsListViewModel(libraryService: svc) }
+            if viewModel == nil, let c = container {
+                viewModel = SongsListViewModel(
+                    libraryService: svc,
+                    downloadService: c.downloadService,
+                    serverState: c.serverState
+                )
+            }
             guard container?.serverState.isOnline == true else { return }
             await viewModel?.load(sort: songSort)
         }
@@ -96,7 +102,7 @@ struct SongsListView: View {
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                 }
-                playShuffleHeader(songs)
+                cloudMusicHeader(vm, songs: songs)
                 ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
                     SongRow(song: song, index: index + 1, showCoverArt: true, isFavorite: isFavorite(song))
                         .contentShape(Rectangle())
@@ -127,33 +133,96 @@ struct SongsListView: View {
     }
 
     @ViewBuilder
-    private func playShuffleHeader(_ songs: [DisplayableSong]) -> some View {
-        HStack(spacing: 12) {
-            Button {
-                Task { try? await container?.playerService.play(tracks: songs, startIndex: 0) }
-            } label: {
-                Label("Play", systemImage: "play.fill").frame(maxWidth: .infinity)
+    private func cloudMusicHeader(_ vm: SongsListViewModel, songs: [DisplayableSong]) -> some View {
+        let localSongs = songs.filter(\.isDownloaded)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(0.18))
+                    Image(systemName: "music.note.list")
+                        .font(.system(size: 25, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: 58, height: 58)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("All Songs")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                    Text("\(songs.count.formatted()) songs · \(localSongs.count.formatted()) downloaded")
+                        .font(.cassetteCaption)
+                        .foregroundStyle(.white.opacity(0.78))
+                }
+                Spacer()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(Color.cassetteAccent)
+
+            HStack(spacing: 10) {
+                Button {
+                    Task { try? await container?.playerService.play(tracks: songs, startIndex: 0) }
+                } label: {
+                    Label("Play", systemImage: "play.fill").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.white)
+                .foregroundStyle(.red)
+
+                Button {
+                    Task { @MainActor in
+                        guard !localSongs.isEmpty else { return }
+                        do {
+                            try await container?.playerService.play(tracks: localSongs, startIndex: 0)
+                        } catch {
+                            container?.toastService.showError("Unable to play downloaded songs.")
+                        }
+                    }
+                } label: {
+                    Label("Play Local", systemImage: "iphone.and.arrow.forward").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(.white)
+                .disabled(localSongs.isEmpty)
+            }
 
             Button {
-                Task {
-                    let idx = Int.random(in: 0..<songs.count)
-                    try? await container?.playerService.play(tracks: songs, startIndex: idx)
-                    if container?.playerState.isShuffled != true {
-                        await container?.playerService.toggleShuffle()
+                Task { @MainActor in
+                    let failures = await vm.downloadAll()
+                    if failures == 0 {
+                        container?.toastService.showSuccess("All songs are available offline")
+                    } else {
+                        container?.toastService.showError("\(failures) songs could not be downloaded")
                     }
                 }
             } label: {
-                Label("Shuffle", systemImage: "shuffle").frame(maxWidth: .infinity)
+                HStack {
+                    if vm.isDownloadingAll {
+                        ProgressView().tint(.white)
+                        Text("Downloading \(vm.downloadCompletedCount)/\(vm.downloadTotalCount)")
+                    } else if localSongs.count == songs.count {
+                        Label("Downloaded", systemImage: "checkmark.circle.fill")
+                    } else {
+                        Label("Download All", systemImage: "arrow.down.circle.fill")
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .tint(Color.cassetteAccent)
+            .tint(.white)
+            .disabled(vm.isDownloadingAll || localSongs.count == songs.count || container?.serverState.isOnline != true)
         }
+        .padding(16)
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.92, green: 0.16, blue: 0.18), Color(red: 0.72, green: 0.05, blue: 0.09)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .shadow(color: Color.red.opacity(0.18), radius: 14, y: 7)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 
     private func isFavorite(_ song: DisplayableSong) -> Bool {
