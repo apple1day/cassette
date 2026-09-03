@@ -103,50 +103,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
-                #if os(iOS)
-                if !visiblePinnedItems.isEmpty {
-                    pinnedSection
-                }
-                #endif
-                #if os(iOS)
-                librarySection
-                #endif
-                #if os(macOS)
-                macOSCarousels
-                #else
-                recentlySection
-                #endif
-            }
-            .padding(.horizontal, CassetteSpacing.l)
-            .padding(.top, CassetteSpacing.m)
-            .padding(.bottom, CassetteSpacing.xl)
-        }
-        .miniPlayerBottomMargin()
-        .navigationTitle("Home")
-        .toolbar {
-            #if !os(macOS)
-            ToolbarItem(placement: .automatic) {
-                Menu {
-                    Button { showCreatePlaylist = true } label: {
-                        Label("New Playlist", systemImage: "plus")
-                    }
-                    .disabled(!isOnline)
-                    Button { navigateToSettings = true } label: {
-                        Label("Settings", systemImage: "gear")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.title3)
-                        .frame(width: 36, height: 36)
-                }
-                .buttonStyle(.plain)
-            }
-            #endif
-        }
-        .sheet(isPresented: $showCreatePlaylist) { CreatePlaylistSheet { _ in } }
-        .navigationDestination(isPresented: $navigateToSettings) { SettingsView() }
+        SongsListView()
         #if os(macOS)
         .navigationDestination(isPresented: $navigateToAllAlbums) { AlbumsListView() }
         #endif
@@ -369,36 +326,36 @@ struct HomeView: View {
 
     private var librarySection: some View {
         VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-            Text("Library")
+            Text("我的音乐")
                 .font(.cassetteSectionTitle)
             VStack(spacing: 0) {
+                NavigationLink(value: HomeDestination.librarySongs) {
+                    HomeLibraryRowLabel(title: "歌曲", systemImage: "music.note")
+                }
+                .buttonStyle(.plain)
+                Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryPlaylists) {
-                    HomeLibraryRowLabel(title: "Playlists", systemImage: "music.note.list")
+                    HomeLibraryRowLabel(title: "歌单", systemImage: "music.note.list")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryAlbums) {
-                    HomeLibraryRowLabel(title: "Albums", systemImage: "square.stack")
+                    HomeLibraryRowLabel(title: "专辑", systemImage: "square.stack")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryArtists) {
-                    HomeLibraryRowLabel(title: "Artists", systemImage: "music.mic")
-                }
-                .buttonStyle(.plain)
-                Divider().padding(.leading, 52)
-                NavigationLink(value: HomeDestination.librarySongs) {
-                    HomeLibraryRowLabel(title: "Songs", systemImage: "music.note")
+                    HomeLibraryRowLabel(title: "歌手", systemImage: "music.mic")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryFavorites) {
-                    HomeLibraryRowLabel(title: "Favorites", systemImage: "star.fill")
+                    HomeLibraryRowLabel(title: "收藏", systemImage: "star.fill")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryDownloads) {
-                    HomeLibraryRowLabel(title: "Downloads", systemImage: "arrow.down.circle.fill")
+                    HomeLibraryRowLabel(title: "已下载", systemImage: "arrow.down.circle.fill")
                 }
                 .buttonStyle(.plain)
             }

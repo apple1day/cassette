@@ -4,6 +4,7 @@
 // See LICENSE file in the project root for full license information.
 
 import SwiftUI
+import SwiftData
 import SwiftSonic
 import OSLog
 
@@ -12,6 +13,7 @@ import OSLog
 /// A–Z jump bar when sorted by title.
 struct SongsListView: View {
     @Environment(\.appContainer) private var container
+    @Query(sort: \DownloadedTrack.title) private var downloadedTracks: [DownloadedTrack]
     @State private var viewModel: SongsListViewModel?
     /// Persisted sort — Title by default, plus Artist / Recently Added / Release Date.
     @AppStorage("cassette.songSort") private var songSort: SongSort = .title
@@ -27,7 +29,7 @@ struct SongsListView: View {
         #if os(iOS)
         .cassetteContentWidth()
         #endif
-        .navigationTitle("Songs")
+        .navigationTitle("歌曲")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 SongSortMenu(sort: $songSort)
@@ -52,14 +54,10 @@ struct SongsListView: View {
 
     @ViewBuilder
     private func content(_ vm: SongsListViewModel) -> some View {
-        if vm.isLoading && vm.displaySongs.isEmpty {
+        if container?.serverState.isOnline != true {
+            offlineSongList
+        } else if vm.isLoading && vm.displaySongs.isEmpty {
             loadingProgress(vm)
-        } else if container?.serverState.isOnline == false && vm.displaySongs.isEmpty {
-            EmptyStateView(
-                systemImage: "wifi.slash",
-                title: "You're Offline",
-                subtitle: "Connect to your server to browse all songs."
-            )
         } else if let error = vm.error, vm.displaySongs.isEmpty {
             EmptyStateView(
                 systemImage: "exclamationmark.triangle",
@@ -76,6 +74,70 @@ struct SongsListView: View {
         } else {
             songList(vm)
         }
+    }
+
+    /// The app is primarily useful away from the home computer that hosts the music server.
+    /// When it is unreachable, keep the same song-first surface and source it from SwiftData
+    /// instead of falling back to the album/folder download browser.
+    @ViewBuilder
+    private var offlineSongList: some View {
+        let serverID = container?.serverState.activeServer?.id
+        let songs = downloadedTracks
+            .filter { serverID == nil || $0.serverId == serverID }
+            .map(DisplayableSong.init(from:))
+
+        if songs.isEmpty {
+            EmptyStateView(
+                systemImage: "arrow.down.circle",
+                title: "暂无本地歌曲",
+                subtitle: "连接你的电脑后，在歌曲页下载音乐，即可离线播放。"
+            )
+        } else {
+            List {
+                offlineMusicHeader(songs: songs)
+                ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
+                    SongRow(song: song, index: index + 1, showCoverArt: true, isFavorite: isFavorite(song))
+                        .contentShape(Rectangle())
+                        .onTapGesture { play(songs, at: index) }
+                }
+            }
+            .listStyle(.plain)
+            .miniPlayerBottomMargin()
+        }
+    }
+
+    private func offlineMusicHeader(songs: [DisplayableSong]) -> some View {
+        HStack(spacing: CassetteSpacing.m) {
+            Image(systemName: "iphone.and.arrow.forward")
+                .font(.title2)
+                .foregroundStyle(Color.cassetteAccent)
+                .frame(width: 44, height: 44)
+                .background(CassetteColors.accentBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("本地音乐 · 离线播放")
+                    .font(.cassetteCellTitle)
+                Text("已下载 \(songs.count.formatted()) 首歌曲")
+                    .font(.cassetteCaption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                Task { try? await container?.playerService.play(tracks: songs, startIndex: 0) }
+            } label: {
+                Image(systemName: "play.fill")
+                    .font(.headline)
+                    .frame(width: 38, height: 38)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.cassetteAccent)
+            .accessibilityLabel("播放本地歌曲")
+        }
+        .padding(.vertical, CassetteSpacing.s)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 
     /// Live count while the library pages in — so a large library shows progress, not a frozen spinner.
@@ -147,10 +209,10 @@ struct SongsListView: View {
                 .frame(width: 58, height: 58)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("All Songs")
+                    Text("在线歌曲")
                         .font(.title2.bold())
                         .foregroundStyle(.white)
-                    Text("\(songs.count.formatted()) songs · \(localSongs.count.formatted()) downloaded")
+                    Text("\(songs.count.formatted()) 首歌曲 · 已下载 \(localSongs.count.formatted()) 首")
                         .font(.cassetteCaption)
                         .foregroundStyle(.white.opacity(0.78))
                 }

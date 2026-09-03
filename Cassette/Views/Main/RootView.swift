@@ -21,6 +21,9 @@ struct RootView: View {
                 #else
                 MainTabView()
                     .accentColor(.cassetteAccent)
+                    // Cassette on iPhone is intentionally a music-first, low-glare player.
+                    // Keep the song list, offline state and floating player on one dark surface.
+                    .preferredColorScheme(.dark)
                 #endif
             } else {
                 OnboardingView()

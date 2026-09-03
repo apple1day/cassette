@@ -39,23 +39,26 @@ struct MainTabView: View {
                         .cassetteZoomTransition(sourceID: fullPlayerZoomID, in: playerZoom)
                 }
         } else {
-            // iOS 18: no tabViewBottomAccessory API. Float the mini player above the
-            // tab bar via a bottom safe-area inset, supplying the material background
-            // the accessory container would otherwise provide (glass falls back to
-            // .ultraThinMaterial pre-26). The zoom transition stays — it's iOS 18+.
+            // iOS 18: no tabViewBottomAccessory API. Keep the player as a dedicated
+            // floating surface above the tab bar. A solid dark surface keeps controls
+            // legible over artwork and song rows instead of inheriting the content
+            // behind a translucent material.
             tabs
                 .safeAreaInset(edge: .bottom) {
                     if hasTrack {
                         MiniPlayerAccessoryView(showingFullPlayer: $showingFullPlayer)
-                            .environment(\.colorScheme, colorScheme)
+                            .environment(\.colorScheme, .dark)
                             .cassetteMatchedTransitionSource(id: fullPlayerZoomID, in: playerZoom)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: CassetteCornerRadius.large))
-                            .clipShape(RoundedRectangle(cornerRadius: CassetteCornerRadius.large))
+                            .background(
+                                Color(red: 0.13, green: 0.13, blue: 0.16),
+                                in: RoundedRectangle(cornerRadius: CassetteCornerRadius.hero)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: CassetteCornerRadius.hero))
                             .overlay {
-                                RoundedRectangle(cornerRadius: CassetteCornerRadius.large)
-                                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                                RoundedRectangle(cornerRadius: CassetteCornerRadius.hero)
+                                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
                             }
-                            .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+                            .shadow(color: .black.opacity(0.35), radius: 16, y: 8)
                             .padding(.horizontal, CassetteSpacing.s)
                             // Lift clear of the tab bar (safeAreaInset draws over it), plus a small gap.
                             .padding(.bottom, CassetteSpacing.legacyTabBarHeight + CassetteSpacing.xs)
@@ -79,24 +82,24 @@ struct MainTabView: View {
 
     private var tabs: some View {
         TabView(selection: $selectedTab) {
-            Tab("Home", systemImage: "house.fill", value: AppTab.home) {
+            Tab("歌曲", systemImage: "music.note", value: AppTab.home) {
                 NavigationStack(path: $homePath) {
                     HomeView()
                 }
             }
 
-            Tab("Discover", systemImage: "sparkles", value: AppTab.discover) {
+            Tab("我的", systemImage: "person.fill", value: AppTab.discover) {
                 NavigationStack {
-                    DiscoverView()
+                    SettingsView()
                 }
             }
 
             Tab(value: AppTab.search, role: .search) {
                 NavigationStack(path: $searchPath) {
                     SearchView(searchQuery: $searchText, path: $searchPath)
-                        .navigationTitle("Search")
+                        .navigationTitle("搜索")
                 }
-                .searchable(text: $searchText, prompt: "Artists, albums, songs\u{2026}")
+                .searchable(text: $searchText, prompt: "搜索歌曲、歌手、专辑…")
             }
         }
         .accentColor(.cassetteAccent)
