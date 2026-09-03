@@ -14,6 +14,7 @@ import OSLog
 struct SongsListView: View {
     @Environment(\.appContainer) private var container
     @Query(sort: \DownloadedTrack.title) private var downloadedTracks: [DownloadedTrack]
+    @Query(sort: \DownloadedPlaylist.name) private var downloadedPlaylists: [DownloadedPlaylist]
     @State private var viewModel: SongsListViewModel?
     /// Persisted sort — Title by default, plus Artist / Recently Added / Release Date.
     @AppStorage("cassette.songSort") private var songSort: SongSort = .title
@@ -54,13 +55,28 @@ struct SongsListView: View {
 
     @ViewBuilder
     private func content(_ vm: SongsListViewModel) -> some View {
-        if vm.isLoading && vm.displaySongs.isEmpty {
-            loadingProgress(vm)
-        } else if vm.displaySongs.isEmpty {
-            // Loading failed (server unreachable) OR offline OR online-but-empty library:
-            // all fall back to the local downloaded list. `offlineSongList` already
-            // renders a "暂无本地歌曲" empty state when no downloads exist.
-            offlineSongList
+        if vm.displaySongs.isEmpty {
+            // KEY FIX: never stall the user on a full-screen spinner when they
+            // have already downloaded music on-device. Local data renders first,
+            // and a server refresh runs behind it with a small inline banner.
+            // The full-screen ProgressView is kept ONLY for the true empty edge
+            // case: nothing on disk and a server fetch is the user's only option.
+            let serverID = container?.serverState.activeServer?.id
+            let songs = downloadedTracks
+                .filter { serverID == nil || $0.serverId == serverID }
+                .map(DisplayableSong.init(from:))
+            let playlists = downloadedPlaylists
+                .filter { serverID == nil || $0.serverId == serverID }
+
+            if vm.isLoading && songs.isEmpty && playlists.isEmpty {
+                loadingProgress(vm)
+            } else {
+                offlineSongList(
+                    songs: songs,
+                    playlists: playlists,
+                    showLoadingBanner: vm.isLoading
+                )
+            }
         } else {
             songList(vm)
         }
@@ -69,44 +85,131 @@ struct SongsListView: View {
     /// The app is primarily useful away from the home computer that hosts the music server.
     /// When it is unreachable, keep the same song-first surface and source it from SwiftData
     /// instead of falling back to the album/folder download browser.
+    ///
+    /// Shows downloaded playlists above downloaded songs so users can find collections they
+    /// saved for offline use without drilling into a separate "歌单" screen first.
+    ///
+    /// - Parameters:
+    ///   - songs: pre-filtered downloaded tracks for the active server.
+    ///   - playlists: pre-filtered downloaded playlists for the active server.
+    ///   - showLoadingBanner: when true, an inline "正在从服务器刷新…" banner is shown
+    ///     above the list (used while a server load is in flight — without replacing the
+    ///     already-usable local content with a spinner).
     @ViewBuilder
-    private var offlineSongList: some View {
-        let serverID = container?.serverState.activeServer?.id
-        let songs = downloadedTracks
-            .filter { serverID == nil || $0.serverId == serverID }
-            .map(DisplayableSong.init(from:))
-
-        if songs.isEmpty {
+    private func offlineSongList(
+        songs: [DisplayableSong],
+        playlists: [DownloadedPlaylist],
+        showLoadingBanner: Bool
+    ) -> some View {
+        if songs.isEmpty && playlists.isEmpty {
             EmptyStateView(
                 systemImage: "arrow.down.circle",
-                title: "暂无本地歌曲",
-                subtitle: "连接你的电脑后，在歌曲页下载音乐，即可离线播放。"
+                title: "暂无本地音乐",
+                subtitle: "连接你的电脑后，在歌曲页或歌单页下载音乐，即可离线播放。"
             )
         } else {
-            List {
-                offlineMusicHeader(songs: songs)
-                ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
-                    SongRow(
-                        song: song,
-                        index: index + 1,
-                        showCoverArt: true,
-                        isFavorite: isFavorite(song),
-                        onRemoveDownload: { removeOfflineDownload(song) }
-                    )
-                    .contentShape(Rectangle())
-                    .onTapGesture { play(songs, at: index) }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            removeOfflineDownload(song)
-                        } label: {
-                            Label("删除下载", systemImage: "trash")
+            VStack(spacing: 0) {
+                if showLoadingBanner {
+                    offlineRefreshBanner
+                }
+                List {
+                    if !playlists.isEmpty {
+                        Section("本地歌单") {
+                            ForEach(playlists) { playlist in
+                                NavigationLink(value: HomeDestination.playlistById(
+                                    id: playlist.playlistId,
+                                    name: playlist.name,
+                                    coverArtId: playlist.coverArtId
+                                )) {
+                                    offlinePlaylistRow(playlist)
+                                }
+                            }
+                        }
+                    }
+
+                    if !songs.isEmpty {
+                        Section("本地歌曲") {
+                            offlineMusicHeader(songs: songs)
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                        }
+                        Section {
+                            ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
+                                SongRow(
+                                    song: song,
+                                    index: index + 1,
+                                    showCoverArt: true,
+                                    isFavorite: isFavorite(song),
+                                    onRemoveDownload: { removeOfflineDownload(song) }
+                                )
+                                .contentShape(Rectangle())
+                                .onTapGesture { play(songs, at: index) }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        removeOfflineDownload(song)
+                                    } label: {
+                                        Label("删除下载", systemImage: "trash")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+                .listStyle(.insetGrouped)
+                .miniPlayerBottomMargin()
             }
-            .listStyle(.plain)
-            .miniPlayerBottomMargin()
         }
+    }
+
+    /// Small top-of-list banner shown when the server is being refreshed in the
+    /// background while the user already has local downloads. Replaces the
+    /// full-screen `LoadingStateView` for the already-usable-offline case.
+    private var offlineRefreshBanner: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+                .tint(.secondary)
+            Text("正在从服务器刷新…")
+                .font(.cassetteCaption)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.cassetteAccent.opacity(0.06))
+    }
+
+    /// A single row for an offline playlist in the home list — mirrors OfflinePlaylistRow
+    /// (from PlaylistListView) but shares the local PlaylistCoverThumbnail renderer so
+    /// cover art stays consistent across surfaces.
+    private func offlinePlaylistRow(_ playlist: DownloadedPlaylist) -> some View {
+        HStack(spacing: CassetteSpacing.m) {
+            PlaylistCoverThumbnail(
+                playlistId: playlist.playlistId,
+                serverId: playlist.serverId,
+                coverArtId: playlist.coverArtId ?? playlist.playlistId,
+                title: playlist.name,
+                size: 56
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(playlist.name)
+                    .font(.cassetteCellTitle)
+                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text("\(playlist.tracksCount) 首")
+                        .font(.cassetteCaption)
+                        .foregroundStyle(.secondary)
+                    if playlist.tracksCount != playlist.totalTracksCount {
+                        Text("(未完整)")
+                            .font(.cassetteCaption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, CassetteSpacing.xs)
     }
 
     /// Removes a downloaded track from the device. If the track is currently playing,

@@ -11,6 +11,7 @@ import OSLog
 struct PlaylistListView: View {
     var zoomNamespace: Namespace.ID? = nil
     @Environment(\.appContainer) private var container
+    @Query(sort: \DownloadedPlaylist.name) private var downloadedPlaylists: [DownloadedPlaylist]
     @State private var viewModel: PlaylistListViewModel?
     @State private var showCreateSheet = false
 
@@ -56,11 +57,32 @@ struct PlaylistListView: View {
 
     @ViewBuilder
     private func content(_ vm: PlaylistListViewModel) -> some View {
-        if vm.isLoading && vm.playlists.isEmpty {
-            LoadingStateView()
-        } else if container?.serverState.isOnline == false && vm.playlists.isEmpty {
-            if let serverId = container?.serverState.activeServer?.id {
-                OfflinePlaylistContent(serverId: serverId)
+        let serverId = container?.serverState.activeServer?.id
+        let localPlaylists = downloadedPlaylists.filter { serverId == nil || $0.serverId == serverId }
+        let shouldShowOffline: Bool = {
+            if !localPlaylists.isEmpty {
+                // Have at least one downloaded playlist — show local list whenever the
+                // server hasn't given us a usable online list yet (loading / error / empty).
+                return vm.playlists.isEmpty
+            }
+            // No local downloads — offline fallback only when connectivity or the server
+            // explicitly tells us to (same as before).
+            return vm.playlists.isEmpty
+                && (container?.serverState.isOnline == false || vm.error != nil)
+        }()
+
+        if shouldShowOffline {
+            if let serverId {
+                if vm.isLoading && localPlaylists.isEmpty {
+                    // Nothing local and server call still in flight → spinner only.
+                    LoadingStateView()
+                } else {
+                    offlinePlaylistContentWithBanner(
+                        serverId: serverId,
+                        playlists: localPlaylists,
+                        showLoadingBanner: vm.isLoading && !localPlaylists.isEmpty
+                    )
+                }
             } else {
                 EmptyStateView(
                     systemImage: "wifi.slash",
@@ -68,13 +90,6 @@ struct PlaylistListView: View {
                     subtitle: "Connect to your server to browse playlists."
                 )
             }
-        } else if let error = vm.error, vm.playlists.isEmpty {
-            EmptyStateView(
-                systemImage: "exclamationmark.triangle",
-                title: "Unable to Load Playlists",
-                subtitle: LocalizedStringKey(error.displayMessage),
-                action: .init(label: "Retry") { Task { await vm.load() } }
-            )
         } else if vm.playlists.isEmpty && vm.bestOfPlaylists.isEmpty {
             EmptyStateView(
                 systemImage: "list.bullet",
@@ -126,6 +141,65 @@ struct PlaylistListView: View {
                 )
             }
         }
+    }
+
+    /// Offline playlist surface rendered from the already-filtered `playlists`
+    /// snapshot, with an optional top "刷新中" banner when a server call is still
+    /// in flight (banner replaces a full-screen spinner so users can tap their
+    /// already-downloaded playlists immediately).
+    @ViewBuilder
+    private func offlinePlaylistContentWithBanner(
+        serverId: UUID,
+        playlists: [DownloadedPlaylist],
+        showLoadingBanner: Bool
+    ) -> some View {
+        if playlists.isEmpty {
+            EmptyStateView(
+                systemImage: "wifi.slash",
+                title: "You're Offline",
+                subtitle: "No downloaded playlists available. Download playlists while online to listen offline."
+            )
+        } else {
+            VStack(spacing: 0) {
+                if showLoadingBanner {
+                    offlineRefreshBanner
+                }
+                List {
+                    Section("Downloaded Playlists") {
+                        ForEach(playlists) { playlist in
+                            NavigationLink(value: HomeDestination.playlistById(
+                                id: playlist.playlistId,
+                                name: playlist.name,
+                                coverArtId: playlist.coverArtId
+                            )) {
+                                OfflinePlaylistRow(playlist: playlist)
+                            }
+                        }
+                    }
+                }
+                .listStyle(.plain)
+                .miniPlayerBottomMargin()
+            }
+        }
+    }
+
+    /// Small inline "刷新中" banner shared with SongsListView's offline surface.
+    /// Kept private per-screen rather than lifted into the design system because
+    /// only these two lists need it.
+    private var offlineRefreshBanner: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+                .tint(.secondary)
+            Text("正在从服务器刷新…")
+                .font(.cassetteCaption)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.cassetteAccent.opacity(0.06))
     }
 }
 
