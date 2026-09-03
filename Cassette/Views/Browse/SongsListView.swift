@@ -54,23 +54,13 @@ struct SongsListView: View {
 
     @ViewBuilder
     private func content(_ vm: SongsListViewModel) -> some View {
-        if container?.serverState.isOnline != true {
-            offlineSongList
-        } else if vm.isLoading && vm.displaySongs.isEmpty {
+        if vm.isLoading && vm.displaySongs.isEmpty {
             loadingProgress(vm)
-        } else if let error = vm.error, vm.displaySongs.isEmpty {
-            EmptyStateView(
-                systemImage: "exclamationmark.triangle",
-                title: "Unable to Load Songs",
-                subtitle: LocalizedStringKey(error.displayMessage),
-                action: .init(label: "Retry") { Task { await vm.load(sort: songSort) } }
-            )
         } else if vm.displaySongs.isEmpty {
-            EmptyStateView(
-                systemImage: "music.note",
-                title: "No Songs",
-                subtitle: "Your library appears to be empty."
-            )
+            // Loading failed (server unreachable) OR offline OR online-but-empty library:
+            // all fall back to the local downloaded list. `offlineSongList` already
+            // renders a "暂无本地歌曲" empty state when no downloads exist.
+            offlineSongList
         } else {
             songList(vm)
         }
@@ -96,13 +86,46 @@ struct SongsListView: View {
             List {
                 offlineMusicHeader(songs: songs)
                 ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
-                    SongRow(song: song, index: index + 1, showCoverArt: true, isFavorite: isFavorite(song))
-                        .contentShape(Rectangle())
-                        .onTapGesture { play(songs, at: index) }
+                    SongRow(
+                        song: song,
+                        index: index + 1,
+                        showCoverArt: true,
+                        isFavorite: isFavorite(song),
+                        onRemoveDownload: { removeOfflineDownload(song) }
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture { play(songs, at: index) }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            removeOfflineDownload(song)
+                        } label: {
+                            Label("删除下载", systemImage: "trash")
+                        }
+                    }
                 }
             }
             .listStyle(.plain)
             .miniPlayerBottomMargin()
+        }
+    }
+
+    /// Removes a downloaded track from the device. If the track is currently playing,
+    /// skip to the next queue item first so deleting the underlying audio file doesn't
+    /// strand the player in an error state. `@Query downloadedTracks` auto-refreshes the list.
+    private func removeOfflineDownload(_ song: DisplayableSong) {
+        Task { @MainActor in
+            guard let container, let serverId = container.serverState.activeServer?.id else { return }
+            // 删除当前播放歌曲前先跳到下一首,避免 AudioStreaming 进入错误状态
+            if container.playerState.currentTrack?.id == song.id {
+                try? await container.playerService.skipToNext()
+            }
+            do {
+                try await container.downloadService.remove(songId: song.id, serverId: serverId)
+                container.toastService.showSuccess("已删除“\(song.title)”")
+            } catch {
+                Logger.library.error("Remove download failed for '\(song.id, privacy: .public)': \(error, privacy: .public)")
+                container.toastService.showError("删除失败:\(error.localizedDescription)")
+            }
         }
     }
 
