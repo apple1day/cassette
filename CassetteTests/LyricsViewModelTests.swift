@@ -25,6 +25,7 @@ final class MockPlayerService: PlayerServiceProtocol {
     func seek(to position: TimeInterval) async { seekCalledWith = position }
     func setRepeatMode(_ mode: RepeatMode) async {}
     func toggleShuffle() async {}
+    func setPlaybackMode(_ mode: PlaybackMode) async {}
     func appendToQueue(_ tracks: [DisplayableSong]) async {}
     func playNext(_ song: DisplayableSong) async {}
     func playNext(_ songs: [DisplayableSong]) async {}

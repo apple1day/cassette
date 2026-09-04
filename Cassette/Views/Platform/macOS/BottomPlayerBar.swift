@@ -250,18 +250,6 @@ struct BottomPlayerBar: View {
 
     private var playbackControls: some View {
         HStack(spacing: 8) {
-            if !isNarrow {
-                Button {
-                    Task { await container?.playerService.toggleShuffle() }
-                } label: {
-                    Image(systemName: "shuffle")
-                        .font(.system(size: 12))
-                        .foregroundStyle(playerState?.isShuffled == true ? Color.cassetteAccent : .secondary)
-                }
-                .buttonStyle(.plain)
-                .disabled(noTrack)
-            }
-
             Button {
                 Task { try? await container?.playerService.skipToPrevious() }
             } label: {
@@ -287,17 +275,18 @@ struct BottomPlayerBar: View {
             if !isNarrow {
                 Button {
                     Task {
-                        if let mode = playerState?.repeatMode {
-                            await container?.playerService.setRepeatMode(mode.next)
+                        if let mode = playerState?.playbackMode {
+                            await container?.playerService.setPlaybackMode(mode.next)
                         }
                     }
                 } label: {
-                    Image(systemName: playerState?.repeatMode.systemImage ?? "repeat")
+                    Image(systemName: playerState?.playbackMode.systemImage ?? "list.bullet")
                         .font(.system(size: 12))
-                        .foregroundStyle(playerState?.repeatMode != .off ? Color.cassetteAccent : .secondary)
+                        .foregroundStyle((playerState?.playbackMode ?? .list) != .list ? Color.cassetteAccent : .secondary)
                 }
                 .buttonStyle(.plain)
                 .disabled(noTrack)
+                .accessibilityLabel(playerState?.playbackMode.title ?? "List")
             }
         }
     }

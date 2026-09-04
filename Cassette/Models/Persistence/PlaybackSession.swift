@@ -28,13 +28,17 @@ final class PlaybackSession {
 
     var lastUpdated: Date
     var repeatModeRaw: String = RepeatMode.off.rawValue
+    /// Persisted unified three-state mode (List / Single / Shuffle). Optional for back-compat with
+    /// sessions saved before this field existed; `decodedPlaybackMode()` falls back to `repeatModeRaw`.
+    var playbackModeRaw: String?
 
     init(
         currentIndex: Int = 0,
         currentPosition: TimeInterval = 0,
         queue: [DisplayableSong] = [],
         currentTrack: DisplayableSong? = nil,
-        repeatMode: RepeatMode = .off
+        repeatMode: RepeatMode = .off,
+        playbackMode: PlaybackMode = .list
     ) {
         self.id = "current"
         self.currentIndex = currentIndex
@@ -48,6 +52,7 @@ final class PlaybackSession {
         self.currentTrackIsDownloaded = currentTrack?.isDownloaded ?? false
         self.lastUpdated = Date()
         self.repeatModeRaw = repeatMode.rawValue
+        self.playbackModeRaw = playbackMode.rawValue
     }
 
     func decodedQueue() -> [DisplayableSong] {
@@ -58,12 +63,23 @@ final class PlaybackSession {
         RepeatMode(rawValue: repeatModeRaw) ?? .off
     }
 
+    /// Resolves the unified three-state mode. Falls back to deriving from `repeatModeRaw` for sessions
+    /// saved before `playbackModeRaw` existed (a stored `.one` → Single; otherwise List — older sessions
+    /// did not persist shuffle, matching the previous restore behavior).
+    func decodedPlaybackMode() -> PlaybackMode {
+        if let raw = playbackModeRaw, let mode = PlaybackMode(rawValue: raw) {
+            return mode
+        }
+        return decodedRepeatMode() == .one ? .single : .list
+    }
+
     func update(
         currentIndex: Int,
         currentPosition: TimeInterval,
         queue: [DisplayableSong],
         currentTrack: DisplayableSong?,
-        repeatMode: RepeatMode
+        repeatMode: RepeatMode,
+        playbackMode: PlaybackMode
     ) {
         self.currentIndex = currentIndex
         self.currentPosition = currentPosition
@@ -76,5 +92,6 @@ final class PlaybackSession {
         self.currentTrackIsDownloaded = currentTrack?.isDownloaded ?? false
         self.lastUpdated = Date()
         self.repeatModeRaw = repeatMode.rawValue
+        self.playbackModeRaw = playbackMode.rawValue
     }
 }

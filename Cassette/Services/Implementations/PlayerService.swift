@@ -1191,6 +1191,38 @@ actor PlayerService: PlayerServiceProtocol {
         await saveSession()
     }
 
+    /// Sets the unified three-state playback mode and keeps the underlying `repeatMode` + `isShuffled`
+    /// in sync. Entering/leaving shuffle reorders the queue (preserving the current track). Mirrors the
+    /// loop-aware auto-extend gating from `setRepeatMode` so auto-extend only runs in non-loop modes.
+    func setPlaybackMode(_ mode: PlaybackMode) async {
+        guard await MainActor.run(body: { !state.isLiveStream }) else {
+            Logger.player.debug("setPlaybackMode ignored — live stream mode")
+            return
+        }
+        let (current, wasLoop) = await MainActor.run { (state.playbackMode, state.repeatMode != .off) }
+        guard current != mode else { return }
+        let willLoop = mode.isLoopMode
+
+        switch mode {
+        case .list:
+            if await MainActor.run(body: { state.isShuffled }) { await restoreOriginalQueueOrder() }
+            await MainActor.run { state.repeatMode = .off; state.isShuffled = false }
+        case .single:
+            if await MainActor.run(body: { state.isShuffled }) { await restoreOriginalQueueOrder() }
+            await MainActor.run { state.repeatMode = .one; state.isShuffled = false }
+        case .shuffle:
+            if await MainActor.run(body: { !state.isShuffled }) { await shuffleUpNext() }
+            await MainActor.run { state.repeatMode = .off; state.isShuffled = true }
+        }
+
+        if !wasLoop && willLoop {
+            await truncateExtensions()
+        } else if wasLoop && !willLoop {
+            await evaluateAutoExtend()
+        }
+        await saveSession()
+    }
+
     private func shuffleUpNext() async {
         let (queue, currentIndex) = await MainActor.run { (state.queue, state.currentIndex) }
         originalQueueOrder = queue
@@ -1346,7 +1378,8 @@ actor PlayerService: PlayerServiceProtocol {
                 currentPosition: state.position,
                 queue: state.queue,
                 currentTrack: state.currentTrack,
-                repeatMode: state.repeatMode
+                repeatMode: state.repeatMode,
+                playbackMode: state.playbackMode
             )
         }
         await sessionService.save(playerState: snapshot)
@@ -1364,6 +1397,7 @@ actor PlayerService: PlayerServiceProtocol {
             state.position = data.currentPosition
             state.duration = data.currentTrackDuration
             state.repeatMode = data.repeatMode
+            state.isShuffled = data.playbackMode == .shuffle
             state.playbackState = .paused
         }
 

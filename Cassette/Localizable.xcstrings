@@ -13861,6 +13861,9 @@
         }
       }
     },
+    "List" : {
+
+    },
     "List view" : {
       "localizations" : {
         "de" : {
@@ -19899,6 +19902,9 @@
         }
       }
     },
+    "Playback mode: %@" : {
+
+    },
     "Playback position" : {
       "localizations" : {
         "de" : {
@@ -21904,6 +21910,7 @@
       }
     },
     "Repeat" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21955,7 +21962,11 @@
         }
       }
     },
+    "Repeat One" : {
+
+    },
     "Repeat: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -23464,6 +23475,7 @@
       }
     },
     "Shuffle Off" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -23516,6 +23528,7 @@
       }
     },
     "Shuffle On" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

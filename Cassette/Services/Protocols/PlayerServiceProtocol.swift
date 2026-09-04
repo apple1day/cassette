@@ -21,6 +21,9 @@ protocol PlayerServiceProtocol: AnyObject, Sendable {
     func seek(to position: TimeInterval) async
     func setRepeatMode(_ mode: RepeatMode) async
     func toggleShuffle() async
+    /// Sets the unified three-state playback mode (List / Single / Shuffle). Keeps the underlying
+    /// `repeatMode` + `isShuffled` in sync and reorders the queue when entering/leaving shuffle.
+    func setPlaybackMode(_ mode: PlaybackMode) async
     func appendToQueue(_ tracks: [DisplayableSong]) async
     func playNext(_ song: DisplayableSong) async
     func playNext(_ songs: [DisplayableSong]) async

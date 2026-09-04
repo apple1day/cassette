@@ -21,6 +21,24 @@ final class PlayerState {
     var duration: TimeInterval = 0
     var repeatMode: RepeatMode = .off
     var isShuffled: Bool = false
+
+    /// Unified three-state playback mode (List / Single / Shuffle) derived from `repeatMode`
+    /// + `isShuffled`. The UI reads this for a single cycling toggle; changes go through
+    /// `PlayerService.setPlaybackMode(_:)`, which keeps the two underlying fields in sync.
+    var playbackMode: PlaybackMode {
+        get {
+            if isShuffled { return .shuffle }
+            if repeatMode == .one { return .single }
+            return .list
+        }
+        set {
+            switch newValue {
+            case .list:    repeatMode = .off;  isShuffled = false
+            case .single:  repeatMode = .one;  isShuffled = false
+            case .shuffle: repeatMode = .off;  isShuffled = true
+            }
+        }
+    }
     /// False when a restored track cannot be resolved (offline + streamed only).
     /// Resets to true when normal playback starts.
     var isPlaybackAvailable: Bool = true

@@ -498,15 +498,6 @@ struct FullPlayerExpandedView: View {
     private var playbackControls: some View {
         HStack(spacing: 32) {
             Button {
-                Task { await container?.playerService.toggleShuffle() }
-            } label: {
-                Image(systemName: "shuffle")
-                    .foregroundStyle(playerState?.isShuffled == true ? playerAccent : Color.white.opacity(0.5))
-            }
-            .buttonStyle(.plain)
-            .disabled(noTrack)
-
-            Button {
                 Task { try? await container?.playerService.skipToPrevious() }
             } label: {
                 Image(systemName: "backward.fill")
@@ -528,16 +519,17 @@ struct FullPlayerExpandedView: View {
 
             Button {
                 Task {
-                    if let mode = playerState?.repeatMode {
-                        await container?.playerService.setRepeatMode(mode.next)
+                    if let mode = playerState?.playbackMode {
+                        await container?.playerService.setPlaybackMode(mode.next)
                     }
                 }
             } label: {
-                Image(systemName: playerState?.repeatMode.systemImage ?? "repeat")
-                    .foregroundStyle(playerState?.repeatMode != .off ? playerAccent : Color.white.opacity(0.5))
+                Image(systemName: playerState?.playbackMode.systemImage ?? "list.bullet")
+                    .foregroundStyle((playerState?.playbackMode ?? .list) != .list ? playerAccent : Color.white.opacity(0.5))
             }
             .buttonStyle(.plain)
             .disabled(noTrack)
+            .accessibilityLabel(playerState?.playbackMode.title ?? "List")
         }
         .font(.title2)
     }

@@ -593,13 +593,10 @@ struct FullPlayerView: View {
 
     private func queuePills(_ playerState: PlayerState) -> some View {
         HStack(spacing: CassetteSpacing.s) {
-            queuePill(systemImage: "shuffle", isActive: playerState.isShuffled,
-                      label: playerState.isShuffled ? "Shuffle On" : "Shuffle Off") {
-                Task { await container?.playerService.toggleShuffle() }
-            }
-            queuePill(systemImage: playerState.repeatMode.systemImage, isActive: playerState.repeatMode != .off,
-                      label: "Repeat") {
-                Task { await container?.playerService.setRepeatMode(playerState.repeatMode.next) }
+            queuePill(systemImage: playerState.playbackMode.systemImage,
+                      isActive: playerState.playbackMode != .list,
+                      label: playerState.playbackMode.title) {
+                Task { await container?.playerService.setPlaybackMode(playerState.playbackMode.next) }
             }
             queuePill(systemImage: "infinity", isActive: playerState.isAutoExtendEnabled,
                       label: "Auto-extend with Smart Shuffle") {
@@ -651,12 +648,11 @@ struct FullPlayerView: View {
     private func queueStatusLine(_ playerState: PlayerState) -> some View {
         let upNextCount = max(playerState.queue.count - playerState.currentIndex - 1, 0)
         var bits: [String] = ["\(upNextCount) up next"]
-        if playerState.repeatMode == .all {
-            bits.append("Repeating all")
-        } else if playerState.repeatMode == .one {
-            bits.append("Repeating one")
+        switch playerState.playbackMode {
+        case .single:  bits.append("Repeat One")
+        case .shuffle: bits.append("Shuffle")
+        case .list:    break
         }
-        if playerState.isShuffled { bits.append("Shuffled") }
         if playerState.isAutoExtendEnabled { bits.append("Auto-extend on") }
         return Text(bits.joined(separator: " · "))
             .font(.cassetteCaption)
@@ -1097,6 +1093,25 @@ private struct PlaybackControlsView: View {
     var body: some View {
         HStack(spacing: CassetteSpacing.xxxxl) {
             if !playerState.isLiveStream {
+                #if os(iOS)
+                Button {
+                    HapticFeedback.light.trigger()
+                    Task { await playerService?.setPlaybackMode(playerState.playbackMode.next) }
+                } label: {
+                    Image(systemName: playerState.playbackMode.systemImage)
+                        .font(.title3)
+                        .foregroundStyle(
+                            playerState.playbackMode != .list
+                                ? CassetteColors.accentForeground(on: contentColor)
+                                : secondaryContentColor
+                        )
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .disabled(!isPlaybackAvailable)
+                .accessibilityLabel("Playback mode: \(playerState.playbackMode.accessibilityLabel)")
+                #endif
+
                 Button {
                     HapticFeedback.light.trigger()
                     Task { try? await playerService?.skipToPrevious() }

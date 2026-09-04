@@ -173,27 +173,15 @@ struct QueueView: View {
         HStack(spacing: CassetteSpacing.xxxxl) {
             Button {
                 HapticFeedback.light.trigger()
-                Task { await container?.playerService.toggleShuffle() }
+                Task { await container?.playerService.setPlaybackMode(playerState.playbackMode.next) }
             } label: {
-                Image(systemName: "shuffle")
+                Image(systemName: playerState.playbackMode.systemImage)
                     .font(.title3)
-                    .foregroundStyle(playerState.isShuffled ? playingAccent : Color.secondary)
+                    .foregroundStyle(playerState.playbackMode != .list ? playingAccent : Color.secondary)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel(playerState.isShuffled ? "Shuffle On" : "Shuffle Off")
-
-            Button {
-                HapticFeedback.light.trigger()
-                Task { await container?.playerService.setRepeatMode(playerState.repeatMode.next) }
-            } label: {
-                Image(systemName: playerState.repeatMode.systemImage)
-                    .font(.title3)
-                    .foregroundStyle(playerState.repeatMode != .off ? playingAccent : Color.secondary)
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel("Repeat: \(playerState.repeatMode == .one ? "One" : playerState.repeatMode == .off ? "Off" : "All")")
+            .accessibilityLabel(playerState.playbackMode.title)
 
             Button {
                 HapticFeedback.light.trigger()
