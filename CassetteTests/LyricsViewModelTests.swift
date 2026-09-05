@@ -163,6 +163,52 @@ struct LyricsViewModelUpdateTests {
         vm.update(elapsedMs: 1600)
         #expect(vm.currentLineIndex == 1)
     }
+
+    /// Line lookup is a binary search; long tracks must stay exact at the boundaries.
+    @Test func picksCorrectLineIndexInLongTrack() async throws {
+        let lines = (0..<500).map { Line(value: "Line \($0)", start: $0 * 1000) }
+        let list = LyricsList(structuredLyrics: [
+            StructuredLyrics(lang: "en", synced: true, line: lines)
+        ])
+        let id = UUID()
+        let (vm, _) = try makeViewModel(serverId: id, lyrics: list)
+        await vm.load()
+
+        vm.update(elapsedMs: 0)
+        #expect(vm.currentLineIndex == 0)
+
+        vm.update(elapsedMs: 250_500)
+        #expect(vm.currentLineIndex == 250)
+
+        vm.update(elapsedMs: 499_000)
+        #expect(vm.currentLineIndex == 499)
+
+        // Before the first line there is nothing to highlight.
+        vm.update(elapsedMs: -1)
+        #expect(vm.currentLineIndex == nil)
+    }
+
+    /// A synced set containing an untimed line must fall back to the linear walk
+    /// rather than bisect past it and skip the right line.
+    @Test func handlesUntimedLineMixedIntoSyncedSet() async throws {
+        let list = LyricsList(structuredLyrics: [
+            StructuredLyrics(lang: "en", synced: true, line: [
+                Line(value: "a", start: 0),
+                Line(value: "b", start: 1000),
+                Line(value: "untimed"),
+                Line(value: "c", start: 2000)
+            ])
+        ])
+        let id = UUID()
+        let (vm, _) = try makeViewModel(serverId: id, lyrics: list)
+        await vm.load()
+
+        vm.update(elapsedMs: 1_500)
+        #expect(vm.currentLineIndex == 1)
+
+        vm.update(elapsedMs: 2_500)
+        #expect(vm.currentLineIndex == 3)
+    }
 }
 
 // MARK: - userTapped(lineIndex:)
@@ -331,5 +377,25 @@ struct LyricsViewModelLoadTests {
         await vm.load()
         // applyCurrentLanguage with no structuredLyrics → .empty
         #expect(vm.state == .empty)
+    }
+
+    @Test func retry_discardsTheCachedResult() async throws {
+        let id = UUID()
+        let (vm, _) = try makeViewModel(serverId: id, lyrics: multiLanguageList())
+        await vm.load()
+
+        guard case .loaded = vm.state else {
+            Issue.record("Expected the cached load to succeed, got \(vm.state)")
+            return
+        }
+
+        // Retry bypasses the cache. The mock server throws on client creation, so the
+        // state has to move off .loaded — proving the cached entry was really dropped.
+        // Serving the cache here would mean a retry can never recover from a stale
+        // "no lyrics" result.
+        await vm.retry()
+        if case .loaded = vm.state {
+            Issue.record("retry() re-served the cache instead of re-querying")
+        }
     }
 }

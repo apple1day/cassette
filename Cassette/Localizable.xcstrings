@@ -26784,6 +26784,9 @@
         }
       }
     },
+    "This server rejected the lyrics endpoint. Structured lyrics need Navidrome 0.53 or later." : {
+
+    },
     "This will remove all your recent searches. This action cannot be undone." : {
       "localizations" : {
         "de" : {
@@ -27955,6 +27958,9 @@
           }
         }
       }
+    },
+    "Try again" : {
+
     },
     "Try again or skip to another track." : {
       "localizations" : {
@@ -29371,6 +29377,7 @@
       }
     },
     "Update your Navidrome server to enable the songLyrics extension" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

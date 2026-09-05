@@ -111,6 +111,40 @@ struct LyricsSelectBestLanguageTests {
         let result = service.selectBestLanguage(from: list, preferred: "und")
         #expect(result?.synced == true)
     }
+
+    /// Regression: a server tagging Chinese tracks `zh-CN` never matched a `zh` locale,
+    /// so Chinese lyrics lost to whichever set happened to be synced.
+    @Test func locale_zh_picksServerZhCN_overEnglishSynced() {
+        let list = LyricsList(structuredLyrics: [
+            StructuredLyrics(lang: "en", synced: true, line: [Line(value: "Hello", start: 0)]),
+            StructuredLyrics(lang: "zh-CN", synced: false, line: [Line(value: "你好")])
+        ])
+        let (service, _) = try! makeService()
+        let result = service.selectBestLanguage(from: list, locale: Locale(identifier: "zh_CN"))
+        #expect(result?.lang == "zh-CN")
+    }
+
+    @Test func locale_zh_picksThreeLetterChinese() {
+        let list = LyricsList(structuredLyrics: [
+            StructuredLyrics(lang: "en", synced: true, line: [Line(value: "Hello", start: 0)]),
+            StructuredLyrics(lang: "zho", synced: false, line: [Line(value: "你好")])
+        ])
+        let (service, _) = try! makeService()
+        let result = service.selectBestLanguage(from: list, locale: Locale(identifier: "zh_CN"))
+        #expect(result?.lang == "zho")
+    }
+
+    /// The user's manual pick has to survive the same mismatch the locale path hit.
+    @Test func preferredTwoLetterCode_matchesServerRegionalTag() {
+        let list = LyricsList(structuredLyrics: [
+            StructuredLyrics(lang: "zh-Hant", synced: false, line: []),
+            StructuredLyrics(lang: "zh-CN", synced: true, line: [])
+        ])
+        let (service, _) = try! makeService()
+        let result = service.selectBestLanguage(from: list, preferred: "zh")
+        #expect(result?.lang == "zh-CN")
+        #expect(result?.synced == true)
+    }
 }
 
 // MARK: - Cache hit

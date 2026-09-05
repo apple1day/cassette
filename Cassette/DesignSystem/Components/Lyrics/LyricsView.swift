@@ -132,7 +132,9 @@ struct LyricsView: View {
             Text("No lyrics available")
                 .font(.cassetteDetailTitle)
                 .foregroundStyle(.secondary)
+            retryButton
         }
+        .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -144,10 +146,11 @@ struct LyricsView: View {
             Text("Lyrics not supported")
                 .font(.cassetteDetailTitle)
                 .foregroundStyle(.secondary)
-            Text("Update your Navidrome server to enable the songLyrics extension")
+            Text("This server rejected the lyrics endpoint. Structured lyrics need Navidrome 0.53 or later.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            retryButton
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -163,9 +166,25 @@ struct LyricsView: View {
             Text(message)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            retryButton
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Re-queries the server, ignoring the cached result.
+    ///
+    /// Failures were previously terminal: the only way out was to leave the player and
+    /// come back. Retrying also clears the negative cache, so a server that has since
+    /// picked up an `.lrc` file is picked up without a restart.
+    private var retryButton: some View {
+        Button {
+            Task { await viewModel.retry() }
+        } label: {
+            Label("Try again", systemImage: "arrow.clockwise")
+                .font(.callout)
+        }
+        .buttonStyle(.bordered)
     }
 
     // MARK: - Helpers

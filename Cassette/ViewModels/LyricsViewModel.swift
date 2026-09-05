@@ -14,6 +14,9 @@ final class LyricsViewModel {
     private let playerState: PlayerState
     private let songId: String
     private let serverId: UUID
+    /// Song metadata, used only by the legacy `getLyrics` fallback — see ``LyricsService``.
+    private let title: String?
+    private let artist: String?
 
     private(set) var state: State = .loading
     private(set) var currentLineIndex: Int?
@@ -40,13 +43,17 @@ final class LyricsViewModel {
         serverId: UUID,
         lyricsService: LyricsService,
         playerService: any PlayerServiceProtocol,
-        playerState: PlayerState
+        playerState: PlayerState,
+        title: String? = nil,
+        artist: String? = nil
     ) {
         self.songId = songId
         self.serverId = serverId
         self.lyricsService = lyricsService
         self.playerService = playerService
         self.playerState = playerState
+        self.title = title
+        self.artist = artist
     }
 
     // MARK: - Load
@@ -54,7 +61,12 @@ final class LyricsViewModel {
     func load() async {
         state = .loading
         do {
-            let list = try await lyricsService.fetchLyrics(forSongId: songId, serverId: serverId)
+            let list = try await lyricsService.fetchLyrics(
+                forSongId: songId,
+                serverId: serverId,
+                title: title,
+                artist: artist
+            )
             lyricsList = list
             applyCurrentLanguage()
         } catch LyricsError.notSupportedByServer {
@@ -68,6 +80,16 @@ final class LyricsViewModel {
         }
     }
 
+    /// Clears the cached result for this song and loads again.
+    ///
+    /// Without the invalidation step a retry would keep serving the negative cache —
+    /// including the "no lyrics" entry written the last time every source came back
+    /// empty — and the user would see no change.
+    func retry() async {
+        await lyricsService.invalidate(songId: songId, serverId: serverId)
+        await load()
+    }
+
     // MARK: - Line tracking
 
     func update(elapsedMs: Int) {
@@ -75,9 +97,49 @@ final class LyricsViewModel {
             currentLineIndex = nil
             return
         }
-        let adjustedMs = elapsedMs - structured.offset
-        var newIndex: Int? = nil
-        for (index, line) in structured.line.enumerated() {
+        let newIndex = lineIndex(
+            for: elapsedMs - structured.offset,
+            in: structured.line
+        )
+        if newIndex != currentLineIndex {
+            currentLineIndex = newIndex
+        }
+    }
+
+    /// Index of the last line whose start time has passed, or `nil` before the first line.
+    ///
+    /// Binary search, because this runs on a 10 Hz timer and a long track can carry
+    /// several hundred lines.
+    ///
+    /// The search assumes ascending start times. Synced sets satisfy that; a line with
+    /// no start time does not, and bisecting past one can skip the correct line
+    /// entirely — so the search bails out to ``linearIndex(for:in:)`` the moment it
+    /// meets one. Behaviour is then identical to the linear walk it replaces.
+    private func lineIndex(for adjustedMs: Int, in lines: [Line]) -> Int? {
+        var low = 0
+        var high = lines.count - 1
+        var found: Int?
+
+        while low <= high {
+            let mid = (low + high) / 2
+            guard let start = lines[mid].start else {
+                return linearIndex(for: adjustedMs, in: lines)
+            }
+            if start <= adjustedMs {
+                found = mid
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+
+        return found
+    }
+
+    /// The straightforward walk, kept for line sets that carry an unsynced line.
+    private func linearIndex(for adjustedMs: Int, in lines: [Line]) -> Int? {
+        var newIndex: Int?
+        for (index, line) in lines.enumerated() {
             guard let start = line.start else { continue }
             if start <= adjustedMs {
                 newIndex = index
@@ -85,9 +147,7 @@ final class LyricsViewModel {
                 break
             }
         }
-        if newIndex != currentLineIndex {
-            currentLineIndex = newIndex
-        }
+        return newIndex
     }
 
     // MARK: - Seek

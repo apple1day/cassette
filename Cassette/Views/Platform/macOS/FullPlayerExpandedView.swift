@@ -103,7 +103,9 @@ struct FullPlayerExpandedView: View {
                 serverId: serverId,
                 lyricsService: lyricsService,
                 playerService: pService,
-                playerState: pState
+                playerState: pState,
+                title: track.title,
+                artist: track.artist
             )
             lyricsViewModel = newVM
             await newVM.load()
