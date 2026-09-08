@@ -28,6 +28,7 @@ final class AppContainer {
     let mediaResolver: any MediaResolverProtocol
     let playerService: any PlayerServiceProtocol
     let nowPlayingService: any NowPlayingServiceProtocol
+    let nowPlayingLyricsCoordinator: NowPlayingLyricsCoordinator
     let favoritesService: any FavoritesServiceProtocol
     let pinService: any PinServiceProtocol
     let playlistService: any PlaylistServiceProtocol
@@ -118,6 +119,12 @@ final class AppContainer {
 
         let nowPlaying = NowPlayingService(playerService: player, artworkImageCache: artworkImageCache)
         nowPlayingService = nowPlaying
+        nowPlayingLyricsCoordinator = NowPlayingLyricsCoordinator(
+            playerState: playerState,
+            serverState: serverState,
+            lyricsService: lyricsService,
+            nowPlayingService: nowPlaying
+        )
 
         favoritesService = FavoritesService(libraryService: library, serverState: serverState, modelContainer: modelContainer)
         let pin = PinService(modelContainer: modelContainer)
@@ -161,6 +168,7 @@ final class AppContainer {
         await _player.setWidgetSyncService(widgetSyncService)
         await _player.setReplayGainService(replayGainService)
         await _player.crossfadeSettingsDidChange()
+        nowPlayingLyricsCoordinator.start()
     }
 }
 

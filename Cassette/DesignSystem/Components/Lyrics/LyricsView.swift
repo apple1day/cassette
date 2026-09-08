@@ -6,7 +6,8 @@
 import SwiftUI
 import SwiftSonic
 
-/// Full-player lyrics panel. Displays all five ViewModel states with tiered blur on lines.
+/// Full-player lyrics panel. Displays all five ViewModel states; the current line is kept
+/// centred in the viewport and emphasised, with the rest fading by distance (no blur).
 struct LyricsView: View {
     @Bindable var viewModel: LyricsViewModel
 
@@ -41,10 +42,18 @@ struct LyricsView: View {
     private func loadedContent(_ structured: StructuredLyrics) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 32) {
+                // Plain VStack, not LazyVStack: every row is materialised, so scrollTo(id,
+                // anchor: .center) always finds the target. Lazy stacks only build rows on
+                // approach — scrollTo to a not-yet-built index silently no-ops, which is how
+                // the lyric column used to stop following the song.
+                VStack(alignment: .leading, spacing: 32) {
                     ForEach(Array(structured.line.enumerated()), id: \.offset) { index, line in
                         LyricsLineView(
-                            value: line.value,
+                            // Defensive: a stray `\r` from any source (server structured
+                            // lyrics included) makes Text overstrike the suffix onto the same
+                            // visual row — the "ghosted" overlap. Normalise it to a vertical
+                            // break so the rest of the line stays readable below, never on top.
+                            value: line.value.replacingOccurrences(of: "\r", with: "\n"),
                             index: index,
                             currentIndex: viewModel.currentLineIndex,
                             isSynced: structured.synced,
@@ -55,15 +64,28 @@ struct LyricsView: View {
                     }
                 }
                 .padding(.horizontal, 8)
-                .padding(.vertical, 200)
+                // Generous top/bottom padding so the first and last lines can still be centred
+                // on the scroll viewport (otherwise anchor .center leaves them pinned to the edge).
+                .padding(.vertical, 240)
             }
             .scrollIndicators(.hidden)
+            // Centre on the current line as it advances. Auto-scroll is suppressed while the
+            // user is dragging (and for the 3 s grace after they let go).
             .onChange(of: viewModel.currentLineIndex) { _, newIndex in
                 guard viewModel.autoScrollEnabled,
-                      !viewModel.isUserScrolling,
-                      let newIndex else { return }
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    proxy.scrollTo(newIndex, anchor: .center)
+                      !viewModel.isUserScrolling else { return }
+                scrollToCurrent(newIndex, in: proxy, animated: true)
+            }
+            // Centre once when lyrics first load — currentLineIndex is already non-nil by the
+            // time the view appears, so the .onChange above never fires for the initial frame
+            // and the column would stay pinned at the top.
+            .onAppear {
+                scrollToCurrent(viewModel.currentLineIndex, in: proxy, animated: false)
+            }
+            .onChange(of: viewModel.state) { _, newState in
+                // Re-centre after a language switch or a retry that swaps the synced set.
+                if case .loaded = newState {
+                    scrollToCurrent(viewModel.currentLineIndex, in: proxy, animated: false)
                 }
             }
             .onScrollPhaseChange { _, newPhase in
@@ -80,6 +102,18 @@ struct LyricsView: View {
             .safeAreaInset(edge: .top, spacing: 0) {
                 header
             }
+        }
+    }
+
+    /// Scrolls the lyric column so `index` sits at the vertical centre of the viewport.
+    /// No-op when there is no line to centre on, or when auto-scroll is disabled.
+    private func scrollToCurrent(_ index: Int?, in proxy: ScrollViewProxy, animated: Bool) {
+        guard viewModel.autoScrollEnabled, let index else { return }
+        let scroll = { proxy.scrollTo(index, anchor: .center) }
+        if animated {
+            withAnimation(.easeInOut(duration: 0.3)) { scroll() }
+        } else {
+            scroll()
         }
     }
 

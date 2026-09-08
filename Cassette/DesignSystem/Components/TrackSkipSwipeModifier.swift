@@ -12,6 +12,12 @@ private struct TrackSkipSwipeModifier: ViewModifier {
     @State private var isAnimatingSwipe = false
 
     let playerState: PlayerState
+    /// When false the gesture stays attached but its `onChanged`/`onEnded` are guarded inert, and any
+    /// non-zero `dragOffset` is pinned to 0. Used to suppress swipe-to-skip while the lyrics panel or the
+    /// queue surface is up, where their own gestures (lyrics tap-to-dismiss, queue scroll/reorder) own the
+    /// touch domain. The gesture is left in the tree (instead of conditionally attached) so we don't have
+    /// to re-architect `body` for a heterogeneous-`some View` return — a linear chain compiles cleanly.
+    let enabled: Bool
 
     private let swipeThreshold: CGFloat = 80
     private let velocityThreshold: CGFloat = 200
@@ -22,18 +28,32 @@ private struct TrackSkipSwipeModifier: ViewModifier {
             .opacity(1.0 - min(abs(dragOffset) / 200, 0.4))
             .gesture(swipeGesture)
             .onChange(of: playerState.currentTrack?.id) { _, _ in dragOffset = 0 }
+            // When `enabled` flips false (lyrics/queue opened), the gesture is guarded inert below, but we still
+            // need to pin `dragOffset` to 0 in case the toggle happened mid-drag — otherwise the page would
+            // freeze in its offset state. The modifier is recreated with the new `enabled`, so onChange diffs
+            // oldE → newE and fires the reset once.
+            .onChange(of: enabled) { _, newValue in if !newValue { dragOffset = 0 } }
     }
 
     private var swipeGesture: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                guard !isAnimatingSwipe, !playerState.isLiveStream else { return }
+                // `enabled` is part of the guard so a disabled modifier (lyrics/queue open) is fully inert:
+                // the drag is ignored AND any stale dragOffset is pinned to 0 so the page can't stay frozen
+                // mid-swipe if the modifier is recreated while a finger is down.
+                guard !isAnimatingSwipe, enabled, !playerState.isLiveStream else {
+                    if !enabled && dragOffset != 0 { dragOffset = 0 }
+                    return
+                }
                 let h = value.translation.width
                 guard abs(h) > abs(value.translation.height) else { return }
                 withAnimation(.interactiveSpring()) { dragOffset = h }
             }
             .onEnded { value in
-                guard !isAnimatingSwipe, !playerState.isLiveStream else { return }
+                guard !isAnimatingSwipe, enabled, !playerState.isLiveStream else {
+                    if !enabled { dragOffset = 0 }
+                    return
+                }
                 let h = value.translation.width
                 let velocity = value.velocity.width
                 guard abs(h) > abs(value.translation.height) else { bounceBack(); return }
@@ -72,9 +92,9 @@ private struct TrackSkipSwipeModifier: ViewModifier {
 #endif
 
 extension View {
-    func trackSkipSwipe(playerState: PlayerState) -> some View {
+    func trackSkipSwipe(playerState: PlayerState, enabled: Bool = true) -> some View {
         #if os(iOS)
-        modifier(TrackSkipSwipeModifier(playerState: playerState))
+        modifier(TrackSkipSwipeModifier(playerState: playerState, enabled: enabled))
         #else
         self
         #endif

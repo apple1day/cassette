@@ -34,6 +34,21 @@ private struct PlayerThemeKey: Equatable {
     let override: Color?
 }
 
+private extension View {
+    /// Adds the auto-lyrics tap-to-restore gesture. In auto ('karaoke') mode a tap anywhere
+    /// dismisses the panel; in manual mode only a tap on empty space does (a tap on a lyric line
+    /// still seeks). `contentShape` keeps the full slot hit-testable past the fade mask.
+    @ViewBuilder
+    func lyricsTapToDismiss(isAutoLyricsMode: Bool, onDismiss: @escaping () -> Void) -> some View {
+        contentShape(Rectangle())
+        if isAutoLyricsMode {
+            highPriorityGesture(TapGesture().onEnded { onDismiss() })
+        } else {
+            onTapGesture { onDismiss() }
+        }
+    }
+}
+
 struct FullPlayerView: View {
     @Environment(\.appContainer) private var container
     @Environment(DominantColorExtractor.self) private var colorExtractor
@@ -43,6 +58,12 @@ struct FullPlayerView: View {
 
     @State private var vm = FullPlayerViewModel()
     @State private var showLyrics = false
+    /// True once the lyrics panel has been auto-opened for the current track. Stays true after a
+    /// tap-dismiss so the panel doesn't immediately re-engage on the next position tick. Reset on
+    /// track change.
+    @State private var hasAutoEngagedLyrics = false
+    /// True while the lyrics panel is in the auto ('karaoke') state, so a tap anywhere dismisses it.
+    @State private var isAutoLyricsMode = false
     @State private var surface: PlayerSurface = .player
     @State private var lyricsViewModel: LyricsViewModel?
     @Namespace private var morphNS
@@ -74,6 +95,8 @@ struct FullPlayerView: View {
                     await vm.updateColors(for: themeCoverId, colorExtractor: colorExtractor, container: container)
                 }
                 .task(id: playerState.currentTrack?.id) {
+                    isAutoLyricsMode = false
+                    hasAutoEngagedLyrics = false
                     guard let track = playerState.currentTrack,
                           let serverId = container?.serverState.activeServer?.id,
                           let lyricsService = container?.lyricsService,
@@ -92,6 +115,10 @@ struct FullPlayerView: View {
                     )
                     lyricsViewModel = newVM
                     await newVM.load()
+                }
+                // Auto-engage the fullscreen lyrics panel once playback passes 15 s.
+                .onChange(of: playerState.position) { _, position in
+                    autoEngageLyricsIfNeeded(position: position, playerState: playerState)
                 }
         }
     }
@@ -203,6 +230,7 @@ struct FullPlayerView: View {
                                 )
                             )
                             .transition(.opacity)
+                            .lyricsTapToDismiss(isAutoLyricsMode: isAutoLyricsMode, onDismiss: { dismissLyrics() })
                     } else if showingQueue {
                         flowingQueueContent(playerState)
                             .transition(.opacity)
@@ -293,6 +321,11 @@ struct FullPlayerView: View {
             // maxHeight .infinity and split the slack, leaving a void below the toolbar in every state.
             .padding(.bottom, CassetteSpacing.l)
         }
+        // NetEase-style horizontal swipe-to-skip: slide the whole player page left for next / right for
+        // previous. Detached while the lyrics panel or the queue surface is up so their own gestures (lyrics
+        // tap-to-dismiss, queue scroll/reorder) don't fight the swipe. The cover's horizontal dominance check
+        // inside the modifier also leaves vertical gestures (none here, but future-safe) alone.
+        .trackSkipSwipe(playerState: playerState, enabled: !showLyrics && !showingQueue)
         // The grabber floats OVER the cover (which now bleeds to the very top), like the album/playlist nav bar.
         .overlay(alignment: .top) {
             topBar
@@ -487,6 +520,7 @@ struct FullPlayerView: View {
                             )
                         )
                         .transition(.opacity)
+                        .lyricsTapToDismiss(isAutoLyricsMode: isAutoLyricsMode, onDismiss: { dismissLyrics() })
                 } else {
                     Color.clear
                         .aspectRatio(1, contentMode: .fit)
@@ -722,6 +756,34 @@ struct FullPlayerView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Close player")
+    }
+
+    // MARK: - Auto fullscreen lyrics
+
+    /// Engages the lyrics panel automatically once playback passes 15 s (once per track), provided
+    /// the current lyrics are time-synced. Guards so it only fires on the player surface, for a
+    /// real (non-radio) track, while actually playing, and once per track.
+    private func autoEngageLyricsIfNeeded(position: TimeInterval, playerState: PlayerState) {
+        guard surface == .player,
+              !playerState.isLiveStream,
+              playerState.playbackState == .playing,
+              position >= 15,
+              !showLyrics,
+              !hasAutoEngagedLyrics else { return }
+        guard let lyricsViewModel,
+              case .loaded(let structured) = lyricsViewModel.state,
+              structured.synced,
+              !structured.line.isEmpty else { return }
+        hasAutoEngagedLyrics = true
+        isAutoLyricsMode = true
+        withAnimation(.smooth(duration: 0.3)) { showLyrics = true }
+    }
+
+    /// Restores the cover view and clears the auto-lyrics flag (so the panel doesn't immediately
+    /// re-engage for the same track).
+    private func dismissLyrics() {
+        withAnimation(.smooth(duration: 0.3)) { showLyrics = false }
+        isAutoLyricsMode = false
     }
 
 }

@@ -22070,6 +22070,9 @@
         }
       }
     },
+    "Replaces the song title with the current lyric line in the now playing info. CarPlay and car head units that only show the track title then display the lyrics." : {
+
+    },
     "ReplayGain" : {
       "localizations" : {
         "de" : {
@@ -23213,6 +23216,9 @@
           }
         }
       }
+    },
+    "Show lyrics in Now Playing" : {
+
     },
     "Show more" : {
       "localizations" : {

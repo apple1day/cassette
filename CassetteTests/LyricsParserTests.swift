@@ -73,6 +73,29 @@ struct LyricsParserTimedTests {
         #expect(LyricsParser.hasTimestamps("[00:12.34]line"))
         #expect(LyricsParser.hasTimestamps("just words") == false)
     }
+
+    /// Some downloaders write `.lrc` with bare `\r` line endings (legacy Mac / old tools).
+    /// Splitting only on `\n` collapses the whole file into one giant line whose value is the
+    /// entire lyric text joined by `\r` — rendered as overlapping, overstruck rows ("ghost").
+    @Test func splitsCROnlyLineEndings() {
+        let lrc = "[00:12.34]first\r[00:15.67]second\r[00:19.00]third"
+        let parsed = LyricsParser.parse(lrc)!
+
+        #expect(parsed.synced)
+        #expect(parsed.line.count == 3)
+        #expect(parsed.line.map { $0.value } == ["first", "second", "third"])
+        #expect(parsed.line.map { $0.start } == [12_340, 15_670, 19_000])
+    }
+
+    /// A carriage return inside a line's text payload (not a separator) becomes a line
+    /// break after normalisation; the un-timed fragment is dropped from the synced set.
+    @Test func normalisesStrayCarriageReturnInValue() {
+        let lrc = "[00:12.34]first\rtext\n[00:15.67]second"
+        let parsed = LyricsParser.parse(lrc)!
+
+        #expect(parsed.line.map { $0.value } == ["first", "second"])
+        #expect(parsed.line.map { $0.start } == [12_340, 15_670])
+    }
 }
 
 @Suite("LyricsParser — untimed content")

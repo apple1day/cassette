@@ -116,7 +116,7 @@ enum LyricsParser {
     private static func placeholderCandidates(in raw: String) -> [String] {
         var texts: [String] = []
 
-        for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: true) {
+        for rawLine in normalized(raw).split(separator: "\n", omittingEmptySubsequences: true) {
             let line = String(rawLine).trimmingCharacters(in: .whitespaces)
             if line.hasPrefix("{") {
                 if let text = netEaseJSONLineText(line) { texts.append(text) }
@@ -129,11 +129,26 @@ enum LyricsParser {
                 guard let close = line[cursor...].firstIndex(of: "]") else { break }
                 cursor = line.index(after: close)
             }
-            let text = String(line[cursor...]).trimmingCharacters(in: .whitespaces)
+            let text = cleanValue(String(line[cursor...]))
             if !text.isEmpty { texts.append(text) }
         }
 
         return texts
+    }
+
+    // MARK: - Line-ending normalisation
+
+    /// Normalises line endings so `\r\n` and bare `\r` split the same way as `\n`.
+    ///
+    /// Some downloaders and legacy Mac files use a bare carriage return as the line
+    /// separator. Splitting only on `\n` then collapses the whole file into a single
+    /// line whose value is the entire lyric text joined by `\r` — which `Text` renders
+    /// as overstruck, overlapping rows ("ghosting"). Normalising up front gives every
+    /// lyric its own timestamped line and removes the stray `\r` that caused the overlap.
+    private static func normalized(_ raw: String) -> String {
+        raw
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
     }
 
     // MARK: - Timed lines
@@ -160,7 +175,7 @@ enum LyricsParser {
 
         var result: [Ranked] = []
 
-        for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
+        for rawLine in normalized(raw).split(separator: "\n", omittingEmptySubsequences: false) {
             let line = String(rawLine).trimmingCharacters(in: .whitespaces)
 
             if line.hasPrefix("{") {
@@ -189,7 +204,7 @@ enum LyricsParser {
 
             guard !stamps.isEmpty else { continue }
 
-            let text = String(line[cursor...]).trimmingCharacters(in: .whitespaces)
+            let text = cleanValue(String(line[cursor...]))
             // LRC ends instrumental sections with an empty timestamped line; keep them so
             // the highlighted line advances through the gap instead of sticking on the
             // previous verse.
@@ -202,6 +217,15 @@ enum LyricsParser {
         return result
             .sorted { ($0.line.start ?? 0, $0.kind) < ($1.line.start ?? 0, $1.kind) }
             .map { $0.line }
+    }
+
+    /// Strips any control characters that would make `Text` reflow the line into an
+    /// overlapping/overstruck blob. Line endings were normalised before the split, so a
+    /// stray `\r` here can only have come from inside a downloader's text payload.
+    private static func cleanValue(_ value: String) -> String {
+        value.replacingOccurrences(of: "\r", with: "")
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespaces)
     }
 
     /// Converts an LRC timestamp body (`"01:23.45"`) to milliseconds.
@@ -280,7 +304,7 @@ enum LyricsParser {
               let chunks = dictionary["c"] as? [[String: Any]] else { return nil }
 
         let text = chunks.compactMap { $0["tx"] as? String }.joined()
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        let trimmed = cleanValue(text)
         return trimmed.isEmpty ? nil : trimmed
     }
 
@@ -305,8 +329,8 @@ enum LyricsParser {
         var result: [Line] = []
         var lastWasBlank = false
 
-        for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
-            let text = String(rawLine).trimmingCharacters(in: .whitespaces)
+        for rawLine in normalized(raw).split(separator: "\n", omittingEmptySubsequences: false) {
+            let text = cleanValue(String(rawLine))
 
             if text.isEmpty {
                 if !result.isEmpty && !lastWasBlank {
@@ -344,7 +368,7 @@ enum LyricsParser {
     private static func parseMetadata(from raw: String) -> Metadata {
         var metadata = Metadata()
 
-        for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
+        for rawLine in normalized(raw).split(separator: "\n", omittingEmptySubsequences: false) {
             let line = String(rawLine).trimmingCharacters(in: .whitespaces)
             guard line.hasPrefix("["), let close = line.firstIndex(of: "]") else { continue }
 

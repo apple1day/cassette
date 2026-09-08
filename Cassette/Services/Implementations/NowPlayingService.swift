@@ -16,6 +16,9 @@ actor NowPlayingService: NowPlayingServiceProtocol {
     private let artworkImageCache: ArtworkImageCache
     private var commandsRegistered = false
     private var currentSong: NowPlayingSnapshot?
+    /// The lyric line currently overriding the now-playing title, or `nil` to show the real
+    /// song title. Kept so position-only updates (pause/resume/seek) don't clobber the override.
+    private var lyricTitle: String?
     /// Wired after init — FavoritesService is built later in AppContainer, same as the
     /// PlayerService→NowPlayingService link.
     private var favoritesService: (any FavoritesServiceProtocol)?
@@ -148,6 +151,8 @@ actor NowPlayingService: NowPlayingServiceProtocol {
             // Live stream: fresh dict with the IsLiveStream flag set.
             // Duration and elapsed time are intentionally omitted — Control Center hides
             // the scrubber automatically when MPNowPlayingInfoPropertyIsLiveStream is true.
+            lyricTitle = nil
+            currentSong = nil
             var info: [String: Any] = [
                 MPMediaItemPropertyTitle: snapshot.title,
                 MPNowPlayingInfoPropertyIsLiveStream: true,
@@ -195,9 +200,10 @@ actor NowPlayingService: NowPlayingServiceProtocol {
         if snapshot.artworkURL == nil {
             // Position-only update (pause/resume/seek): merge into the existing dict so
             // artwork already loaded for the current track is preserved.
+            let title = lyricTitle ?? snapshot.title
             await MainActor.run {
                 var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
-                info[MPMediaItemPropertyTitle] = snapshot.title
+                info[MPMediaItemPropertyTitle] = title
                 info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = snapshot.position
                 info[MPMediaItemPropertyPlaybackDuration] = snapshot.duration
                 info[MPNowPlayingInfoPropertyPlaybackRate] = snapshot.playbackRate
@@ -228,6 +234,7 @@ actor NowPlayingService: NowPlayingServiceProtocol {
         // New track: build from scratch so stale artwork from the previous track is cleared
         // before the new one loads. Text metadata is committed first so the lockscreen
         // doesn't flash empty while the artwork fetch is in progress.
+        lyricTitle = nil
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: snapshot.title,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: snapshot.position,
@@ -300,6 +307,33 @@ actor NowPlayingService: NowPlayingServiceProtocol {
             #if os(macOS)
             MPNowPlayingInfoCenter.default().playbackState = .playing
             #endif
+        }
+    }
+
+    // MARK: - Lyric title override
+
+    /// Replaces the now-playing title with the current lyric line (or restores the real song
+    /// title on `nil`). Only applies to non-live playback — CarPlay / car head units that draw
+    /// just the title then show the lyric, which was previously impossible without them reading
+    /// the artist/album fields.
+    func setLyricTitle(_ lyric: String?) async {
+        // Resolve actor state on the actor (not inside MainActor.run) — reads of `currentSong` /
+        // mutation of `lyricTitle` are actor-isolated, and the MainActor block only touches the
+        // global now-playing dict via a captured local.
+        let realTitle = currentSong?.title
+        let newTitle: String
+        if let lyric, !lyric.isEmpty {
+            lyricTitle = lyric
+            newTitle = lyric
+        } else {
+            lyricTitle = nil
+            newTitle = realTitle ?? ""
+        }
+        guard realTitle != nil else { return }   // no-op for live streams (no song to title)
+        await MainActor.run {
+            guard var info = MPNowPlayingInfoCenter.default().nowPlayingInfo else { return }
+            info[MPMediaItemPropertyTitle] = newTitle
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = info
         }
     }
 

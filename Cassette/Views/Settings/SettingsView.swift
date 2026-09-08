@@ -40,6 +40,7 @@ struct SettingsView: View {
             CacheSectionView()
             ReplayGainSettingsSection()
             CrossfadeSettingsSection()
+            LyricsSettingsSection()
             serverSection()
             integrationsSection()
             aboutSection()
