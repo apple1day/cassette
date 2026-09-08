@@ -271,7 +271,9 @@ actor LyricsService {
     }
 
     private func cacheKey(songId: String, serverId: UUID) -> String {
-        "\(serverId.uuidString):\(songId)"
+        // v2 invalidates entries produced before the OpenSubsonic/LRC offset-sign
+        // correction. Reusing those payloads would keep displaying the old wrong timing.
+        "v2:\(serverId.uuidString):\(songId)"
     }
 
     private func cachedEntry(songId: String, serverId: UUID) async -> CacheEntry? {

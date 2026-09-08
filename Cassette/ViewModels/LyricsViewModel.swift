@@ -98,7 +98,10 @@ final class LyricsViewModel {
             return
         }
         let newIndex = lineIndex(
-            for: elapsedMs - structured.offset,
+            // OpenSubsonic defines a positive offset as "lyrics appear sooner".
+            // A line stamped at 10 s with +500 ms therefore becomes active at
+            // 9.5 s: elapsed + offset is compared with the stored line start.
+            for: elapsedMs + structured.offset,
             in: structured.line
         )
         if newIndex != currentLineIndex {
@@ -156,7 +159,9 @@ final class LyricsViewModel {
         guard case .loaded(let structured) = state, structured.synced else { return }
         guard lineIndex < structured.line.count else { return }
         guard let startMs = structured.line[lineIndex].start else { return }
-        let targetSeconds = TimeInterval(startMs + structured.offset) / 1000.0
+        // Inverse of update(elapsedMs:): seek to the playback instant at which
+        // this line becomes active. Clamp pre-roll lines to the start of media.
+        let targetSeconds = max(0, TimeInterval(startMs - structured.offset) / 1000.0)
         Task { [weak self] in
             await self?.playerService.seek(to: targetSeconds)
         }
@@ -203,6 +208,10 @@ final class LyricsViewModel {
         if !visible {
             resumeTask?.cancel()
             resumeTask = nil
+        } else {
+            // A paused player has no tracking timer. Sample once on appearance so
+            // opening lyrics while paused still highlights and centres the right line.
+            update(elapsedMs: Int(playerState.position * 1000))
         }
         reconcileTracking()
     }
@@ -245,6 +254,9 @@ final class LyricsViewModel {
         let best = lyricsService.selectBestLanguage(from: list, preferred: selectedLanguage)
         currentLineIndex = nil
         state = best.map { .loaded($0) } ?? .empty
+        // Keep language switches and a completed async load aligned immediately,
+        // including while playback is paused (when no timer will fire).
+        update(elapsedMs: Int(playerState.position * 1000))
         // Lyrics (and their synced-ness) just changed — start the timer if it should now run.
         reconcileTracking()
     }

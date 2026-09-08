@@ -10,6 +10,7 @@ import SwiftSonic
 /// centred in the viewport and emphasised, with the rest fading by distance (no blur).
 struct LyricsView: View {
     @Bindable var viewModel: LyricsViewModel
+    var foregroundColor: Color = .white
 
     var body: some View {
         Group {
@@ -58,6 +59,7 @@ struct LyricsView: View {
                             currentIndex: viewModel.currentLineIndex,
                             isSynced: structured.synced,
                             isTappable: structured.synced && line.start != nil,
+                            foregroundColor: foregroundColor,
                             onTap: { viewModel.userTapped(lineIndex: index) }
                         )
                         .id(index)
@@ -87,6 +89,17 @@ struct LyricsView: View {
                 if case .loaded = newState {
                     scrollToCurrent(viewModel.currentLineIndex, in: proxy, animated: false)
                 }
+            }
+            // During the manual-scroll grace period the active lyric may advance,
+            // but those changes intentionally do not move the list. Re-centre as
+            // soon as auto-follow resumes instead of waiting for another lyric line.
+            .onChange(of: viewModel.isUserScrolling) { _, isScrolling in
+                guard !isScrolling else { return }
+                scrollToCurrent(viewModel.currentLineIndex, in: proxy, animated: true)
+            }
+            .onChange(of: viewModel.autoScrollEnabled) { _, isEnabled in
+                guard isEnabled else { return }
+                scrollToCurrent(viewModel.currentLineIndex, in: proxy, animated: true)
             }
             .onScrollPhaseChange { _, newPhase in
                 switch newPhase {
@@ -135,7 +148,7 @@ struct LyricsView: View {
                         Text(displayName(for: viewModel.selectedLanguage ?? "und"))
                     }
                     .font(.callout)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(foregroundColor.opacity(0.8))
                 }
             }
 
@@ -148,7 +161,7 @@ struct LyricsView: View {
                     ? "arrow.up.arrow.down.circle.fill"
                     : "arrow.up.arrow.down.circle")
                     .font(.title3)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(foregroundColor.opacity(0.8))
             }
             .buttonStyle(.plain)
         }
@@ -162,10 +175,10 @@ struct LyricsView: View {
         VStack(spacing: 16) {
             Image(systemName: "music.note.list")
                 .font(.system(size: 40))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(foregroundColor.opacity(0.65))
             Text("No lyrics available")
                 .font(.cassetteDetailTitle)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(foregroundColor.opacity(0.65))
             retryButton
         }
         .padding()
@@ -176,13 +189,13 @@ struct LyricsView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 40))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(foregroundColor.opacity(0.65))
             Text("Lyrics not supported")
                 .font(.cassetteDetailTitle)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(foregroundColor.opacity(0.65))
             Text("This server rejected the lyrics endpoint. Structured lyrics need Navidrome 0.53 or later.")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(foregroundColor.opacity(0.65))
                 .multilineTextAlignment(.center)
             retryButton
         }
@@ -194,12 +207,13 @@ struct LyricsView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.octagon")
                 .font(.system(size: 40))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(foregroundColor.opacity(0.65))
             Text("Failed to load lyrics")
                 .font(.cassetteDetailTitle)
+                .foregroundStyle(foregroundColor)
             Text(message)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(foregroundColor.opacity(0.65))
             retryButton
         }
         .padding()

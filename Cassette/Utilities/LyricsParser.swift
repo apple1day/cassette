@@ -361,10 +361,10 @@ enum LyricsParser {
 
     /// Reads LRC metadata tags: `ti`, `ar`, and `offset`.
     ///
-    /// **Offset sign convention.** LRC and OpenSubsonic disagree here. In LRC a positive
-    /// offset makes lyrics appear *sooner*; ``LyricsViewModel/update(elapsedMs:)`` applies
-    /// `adjusted = elapsed - offset`, so a positive OpenSubsonic offset *delays* a line.
-    /// The sign is therefore flipped when translating.
+    /// **Offset sign convention.** LRC and OpenSubsonic use the same convention: a
+    /// positive offset makes lyrics appear sooner and a negative offset makes them
+    /// appear later. Keep the source value unchanged so structured and legacy lyrics
+    /// follow identical timing rules.
     private static func parseMetadata(from raw: String) -> Metadata {
         var metadata = Metadata()
 
@@ -388,7 +388,7 @@ enum LyricsParser {
             case "offset":
                 // LRC offsets are whole milliseconds, optionally signed.
                 if let lrcOffset = Int(value) {
-                    metadata.offset = -lrcOffset
+                    metadata.offset = lrcOffset
                 }
             default:
                 break

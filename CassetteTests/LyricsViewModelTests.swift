@@ -53,7 +53,9 @@ final class MockPlayerService: PlayerServiceProtocol {
 private func makeViewModel(
     songId: String = "song-1",
     serverId: UUID = UUID(),
-    lyrics: LyricsList? = nil
+    lyrics: LyricsList? = nil,
+    playerPosition: TimeInterval = 0,
+    playbackState: PlaybackState = .idle
 ) throws -> (LyricsViewModel, MockPlayerService) {
     let container = try ModelContainer(
         for: Schema([CachedLyrics.self]),
@@ -71,6 +73,8 @@ private func makeViewModel(
     let service = LyricsService(serverService: serverService, modelContainer: container)
     let playerService = MockPlayerService()
     let playerState = PlayerState()
+    playerState.position = playerPosition
+    playerState.playbackState = playbackState
 
     let vm = LyricsViewModel(
         songId: songId,
@@ -135,32 +139,47 @@ struct LyricsViewModelUpdateTests {
     }
 
     @Test func appliesNegativeOffset() async throws {
-        // offset = -500 means lines shift 500ms later
+        // offset = -500 means lines appear 500ms later.
         let id = UUID()
         let (vm, _) = try makeViewModel(serverId: id, lyrics: syncedList(offset: -500))
         await vm.load()
 
-        // adjustedMs = 400 - (-500) = 900 → still line 0 (line 1 starts at 1000)
-        vm.update(elapsedMs: 400)
+        // adjustedMs = 1_400 + (-500) = 900 → still line 0.
+        vm.update(elapsedMs: 1_400)
         #expect(vm.currentLineIndex == 0)
 
-        // adjustedMs = 600 - (-500) = 1100 → line 1
-        vm.update(elapsedMs: 600)
+        // adjustedMs = 1_600 + (-500) = 1_100 → line 1.
+        vm.update(elapsedMs: 1_600)
         #expect(vm.currentLineIndex == 1)
     }
 
     @Test func appliesPositiveOffset() async throws {
-        // offset = 500 means lines shift 500ms earlier
+        // offset = 500 means lines appear 500ms earlier.
         let id = UUID()
         let (vm, _) = try makeViewModel(serverId: id, lyrics: syncedList(offset: 500))
         await vm.load()
 
-        // adjustedMs = 1200 - 500 = 700 → line 0 (line 1 starts at 1000)
-        vm.update(elapsedMs: 1200)
+        // adjustedMs = 400 + 500 = 900 → still line 0.
+        vm.update(elapsedMs: 400)
         #expect(vm.currentLineIndex == 0)
 
-        // adjustedMs = 1600 - 500 = 1100 → line 1
-        vm.update(elapsedMs: 1600)
+        // adjustedMs = 600 + 500 = 1_100 → line 1.
+        vm.update(elapsedMs: 600)
+        #expect(vm.currentLineIndex == 1)
+    }
+
+    @Test func openingWhilePausedSamplesCurrentPosition() async throws {
+        let id = UUID()
+        let (vm, _) = try makeViewModel(
+            serverId: id,
+            lyrics: syncedList(),
+            playerPosition: 1.5,
+            playbackState: .paused
+        )
+        await vm.load()
+
+        vm.setVisible(true)
+
         #expect(vm.currentLineIndex == 1)
     }
 
@@ -232,9 +251,19 @@ struct LyricsViewModelSeekTests {
         let (vm, playerService) = try makeViewModel(serverId: id, lyrics: syncedList(offset: 200))
         await vm.load()
 
-        vm.userTapped(lineIndex: 0) // start=0, offset=200 → (0+200)/1000 = 0.2s
+        vm.userTapped(lineIndex: 1) // start=1000ms, +200ms appears sooner → 0.8s
         try await Task.sleep(for: .milliseconds(50))
-        #expect(playerService.seekCalledWith == 0.2)
+        #expect(playerService.seekCalledWith == 0.8)
+    }
+
+    @Test func seekClampsPositiveOffsetBeforeTrackStart() async throws {
+        let id = UUID()
+        let (vm, playerService) = try makeViewModel(serverId: id, lyrics: syncedList(offset: 200))
+        await vm.load()
+
+        vm.userTapped(lineIndex: 0)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(playerService.seekCalledWith == 0)
     }
 
     @Test func noSeekOnUnsyncedState() async throws {

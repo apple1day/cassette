@@ -31,9 +31,8 @@ struct LyricsParserTimedTests {
         #expect(parsed.line[0].start == 12_340)
         #expect(parsed.displayTitle == "Title")
         #expect(parsed.displayArtist == "Artist")
-        // LRC positive offset means "appear sooner"; Cassette's tracker applies
-        // adjusted = elapsed - offset, so a positive OpenSubsonic offset delays a line.
-        #expect(parsed.offset == -500)
+        // LRC and OpenSubsonic both define a positive offset as "appear sooner".
+        #expect(parsed.offset == 500)
     }
 
     /// A verse repeated later reuses one line of text with two timestamps.

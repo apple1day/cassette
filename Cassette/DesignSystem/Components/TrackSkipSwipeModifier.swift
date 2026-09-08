@@ -5,88 +5,206 @@
 
 import SwiftUI
 
+/// Pure queue navigation used by the cover pager and its regression tests.
+/// A cover swipe always changes tracks; unlike the transport's Previous button,
+/// it never restarts the current song merely because playback passed three seconds.
+enum TrackSkipNavigation {
+    static func targetIndex(
+        goNext: Bool,
+        currentIndex: Int,
+        queueCount: Int,
+        repeatMode: RepeatMode
+    ) -> Int? {
+        guard queueCount > 0, (0..<queueCount).contains(currentIndex) else { return nil }
+
+        if goNext {
+            if currentIndex + 1 < queueCount { return currentIndex + 1 }
+            return repeatMode == .all && queueCount > 1 ? 0 : nil
+        }
+
+        if currentIndex > 0 { return currentIndex - 1 }
+        return repeatMode == .all && queueCount > 1 ? queueCount - 1 : nil
+    }
+}
+
 #if os(iOS)
 private struct TrackSkipSwipeModifier: ViewModifier {
     @Environment(\.appContainer) private var container
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var dragOffset: CGFloat = 0
     @State private var isAnimatingSwipe = false
 
     let playerState: PlayerState
-    /// When false the gesture stays attached but its `onChanged`/`onEnded` are guarded inert, and any
-    /// non-zero `dragOffset` is pinned to 0. Used to suppress swipe-to-skip while the lyrics panel or the
-    /// queue surface is up, where their own gestures (lyrics tap-to-dismiss, queue scroll/reorder) own the
-    /// touch domain. The gesture is left in the tree (instead of conditionally attached) so we don't have
-    /// to re-architect `body` for a heterogeneous-`some View` return — a linear chain compiles cleanly.
     let enabled: Bool
 
-    private let swipeThreshold: CGFloat = 80
-    private let velocityThreshold: CGFloat = 200
-
     func body(content: Content) -> some View {
-        content
-            .offset(x: dragOffset)
-            .opacity(1.0 - min(abs(dragOffset) / 200, 0.4))
-            .gesture(swipeGesture)
-            .onChange(of: playerState.currentTrack?.id) { _, _ in dragOffset = 0 }
-            // When `enabled` flips false (lyrics/queue opened), the gesture is guarded inert below, but we still
-            // need to pin `dragOffset` to 0 in case the toggle happened mid-drag — otherwise the page would
-            // freeze in its offset state. The modifier is recreated with the new `enabled`, so onChange diffs
-            // oldE → newE and fires the reset once.
-            .onChange(of: enabled) { _, newValue in if !newValue { dragOffset = 0 } }
+        GeometryReader { geometry in
+            let pageWidth = max(geometry.size.width, 1)
+            let progress = min(abs(dragOffset) / pageWidth, 1)
+
+            ZStack {
+                if let previous = targetTrack(goNext: false) {
+                    neighbourCover(previous)
+                        .offset(x: -pageWidth + dragOffset)
+                        .scaleEffect(0.96 + 0.04 * progress)
+                }
+
+                content
+                    .offset(x: dragOffset)
+                    .scaleEffect(1 - 0.04 * progress)
+
+                if let next = targetTrack(goNext: true) {
+                    neighbourCover(next)
+                        .offset(x: pageWidth + dragOffset)
+                        .scaleEffect(0.96 + 0.04 * progress)
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
+            .contentShape(Rectangle())
+            // The cover contains async image subviews and sits inside the full-player
+            // presentation gesture hierarchy. Give horizontal paging priority so the
+            // drag is not swallowed by either layer before direction is resolved.
+            .highPriorityGesture(swipeGesture(pageWidth: pageWidth))
+        }
+        .onChange(of: playerState.currentTrack?.id) { _, _ in
+            // A committed swipe resets after PlayerService adopts its target. External
+            // track changes (transport, lock screen, auto-next) should reset immediately.
+            guard !isAnimatingSwipe else { return }
+            dragOffset = 0
+        }
+        .onChange(of: enabled) { _, newValue in
+            guard !newValue else { return }
+            isAnimatingSwipe = false
+            dragOffset = 0
+        }
     }
 
-    private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 10)
+    @ViewBuilder
+    private func neighbourCover(_ track: DisplayableSong) -> some View {
+        CoverArtView(id: track.coverArtId ?? track.id, size: 1000)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .accessibilityHidden(true)
+    }
+
+    private func targetTrack(goNext: Bool) -> DisplayableSong? {
+        guard let index = TrackSkipNavigation.targetIndex(
+            goNext: goNext,
+            currentIndex: playerState.currentIndex,
+            queueCount: playerState.queue.count,
+            repeatMode: playerState.repeatMode
+        ), playerState.queue.indices.contains(index) else { return nil }
+        return playerState.queue[index]
+    }
+
+    private func swipeGesture(pageWidth: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 8)
             .onChanged { value in
-                // `enabled` is part of the guard so a disabled modifier (lyrics/queue open) is fully inert:
-                // the drag is ignored AND any stale dragOffset is pinned to 0 so the page can't stay frozen
-                // mid-swipe if the modifier is recreated while a finger is down.
-                guard !isAnimatingSwipe, enabled, !playerState.isLiveStream else {
-                    if !enabled && dragOffset != 0 { dragOffset = 0 }
-                    return
-                }
-                let h = value.translation.width
-                guard abs(h) > abs(value.translation.height) else { return }
-                withAnimation(.interactiveSpring()) { dragOffset = h }
+                guard enabled, !isAnimatingSwipe, !playerState.isLiveStream else { return }
+
+                let horizontal = value.translation.width
+                guard abs(horizontal) > abs(value.translation.height) else { return }
+
+                let goNext = horizontal < 0
+                let hasTarget = targetTrack(goNext: goNext) != nil
+                // At queue boundaries the cover still acknowledges the gesture, but
+                // heavy rubber-banding makes it clear there is no hidden blank page.
+                dragOffset = hasTarget ? horizontal : horizontal * 0.16
             }
             .onEnded { value in
-                guard !isAnimatingSwipe, enabled, !playerState.isLiveStream else {
-                    if !enabled { dragOffset = 0 }
+                guard enabled, !isAnimatingSwipe, !playerState.isLiveStream else {
+                    resetWithoutAnimation()
                     return
                 }
-                let h = value.translation.width
-                let velocity = value.velocity.width
-                guard abs(h) > abs(value.translation.height) else { bounceBack(); return }
-                let triggeredNext = h < -swipeThreshold || velocity < -velocityThreshold
-                let triggeredPrev = h > swipeThreshold || velocity > velocityThreshold
-                if triggeredNext || triggeredPrev {
-                    commitSwipe(goNext: triggeredNext)
+
+                let horizontal = value.translation.width
+                guard abs(horizontal) > abs(value.translation.height) else {
+                    bounceBack()
+                    return
+                }
+
+                let goNext = horizontal < 0
+                guard targetTrack(goNext: goNext) != nil else {
+                    HapticFeedback.light.trigger()
+                    bounceBack()
+                    return
+                }
+
+                let distanceThreshold = min(max(pageWidth * 0.22, 64), 110)
+                let projected = value.predictedEndTranslation.width
+                let crossedDistance = abs(horizontal) >= distanceThreshold
+                let projectedAcrossPage = abs(projected) >= pageWidth * 0.42
+
+                if crossedDistance || projectedAcrossPage {
+                    commitSwipe(goNext: goNext, pageWidth: pageWidth)
                 } else {
                     bounceBack()
                 }
             }
     }
 
-    private func commitSwipe(goNext: Bool) {
+    private func commitSwipe(goNext: Bool, pageWidth: CGFloat) {
+        guard let targetIndex = TrackSkipNavigation.targetIndex(
+            goNext: goNext,
+            currentIndex: playerState.currentIndex,
+            queueCount: playerState.queue.count,
+            repeatMode: playerState.repeatMode
+        ) else {
+            bounceBack()
+            return
+        }
+
+        let queue = playerState.queue
         isAnimatingSwipe = true
         HapticFeedback.medium.trigger()
-        withAnimation(.easeIn(duration: 0.18)) { dragOffset = goNext ? -300 : 300 }
-        Task {
-            if goNext {
-                try? await container?.playerService.skipToNext()
-            } else {
-                try? await container?.playerService.skipToPrevious()
+
+        let exitOffset = goNext ? -pageWidth : pageWidth
+        let pageAnimation: Animation = reduceMotion
+            ? .easeOut(duration: 0.12)
+            : .snappy(duration: 0.24, extraBounce: 0.02)
+        withAnimation(pageAnimation) {
+            dragOffset = exitOffset
+        }
+
+        Task { @MainActor in
+            if !reduceMotion {
+                try? await Task.sleep(for: .milliseconds(220))
             }
-            await MainActor.run {
-                dragOffset = goNext ? 300 : -300
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) { dragOffset = 0 }
+
+            guard let playerService = container?.playerService else {
                 isAnimatingSwipe = false
+                bounceBack()
+                return
+            }
+
+            do {
+                // The incoming adjacent cover is already centred at this point. Adopt
+                // the corresponding queue item, then swap it into the current slot in
+                // a no-animation transaction so there is no flash or reverse fly-in.
+                try await playerService.play(tracks: queue, startIndex: targetIndex)
+                resetWithoutAnimation()
+                isAnimatingSwipe = false
+            } catch {
+                isAnimatingSwipe = false
+                bounceBack()
             }
         }
     }
 
     private func bounceBack() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { dragOffset = 0 }
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+            dragOffset = 0
+        }
+    }
+
+    private func resetWithoutAnimation() {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            dragOffset = 0
+        }
     }
 }
 #endif

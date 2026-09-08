@@ -214,7 +214,7 @@ struct FullPlayerView: View {
                     // Content branches crossfade (lyrics / queue body). The cover is NOT in this if/else — it
                     // is hoisted below so it never follows a branch's removal (which sent it off-screen).
                     if showLyrics, let lyricsVM = lyricsViewModel {
-                        LyricsView(viewModel: lyricsVM)
+                        LyricsView(viewModel: lyricsVM, foregroundColor: vm.contentColor)
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 20)
                             .mask(
@@ -321,11 +321,6 @@ struct FullPlayerView: View {
             // maxHeight .infinity and split the slack, leaving a void below the toolbar in every state.
             .padding(.bottom, CassetteSpacing.l)
         }
-        // NetEase-style horizontal swipe-to-skip: slide the whole player page left for next / right for
-        // previous. Detached while the lyrics panel or the queue surface is up so their own gestures (lyrics
-        // tap-to-dismiss, queue scroll/reorder) don't fight the swipe. The cover's horizontal dominance check
-        // inside the modifier also leaves vertical gestures (none here, but future-safe) alone.
-        .trackSkipSwipe(playerState: playerState, enabled: !showLyrics && !showingQueue)
         // The grabber floats OVER the cover (which now bleeds to the very top), like the album/playlist nav bar.
         .overlay(alignment: .top) {
             topBar
@@ -378,6 +373,10 @@ struct FullPlayerView: View {
                 // Fill the width and run slightly TALLER than square (1.12×) so the cover has more presence and
                 // its bottom melt starts lower down the screen. Definite size (not greedy) keeps the controls placed.
                 .frame(width: isSource ? min(geo.size.width, geo.size.height) : nil, height: isSource ? min(geo.size.width, geo.size.height) * 1.20 : nil)
+                // Only the artwork pages horizontally. The adjacent queue cover follows
+                // the finger from the corresponding edge while the metadata and transport
+                // controls stay anchored, matching mainstream music-player behaviour.
+                .trackSkipSwipe(playerState: playerState, enabled: isSource)
                 // Rounded corners on the small flown cover in the queue header; sharp full-bleed on the player.
                 .clipShape(RoundedRectangle(cornerRadius: isSource ? 0 : CassetteCornerRadius.standard))
                 // Light blurred melt at the bottom: a thin strip of the cover blurs and fades into the dominant
@@ -504,7 +503,7 @@ struct FullPlayerView: View {
 
             ZStack {
                 if showLyrics, let lyricsVM = lyricsViewModel {
-                    LyricsView(viewModel: lyricsVM)
+                    LyricsView(viewModel: lyricsVM, foregroundColor: vm.contentColor)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 20)
                         .mask(
@@ -541,7 +540,6 @@ struct FullPlayerView: View {
                         .scaleEffect(isPlaying ? 1.0 : 0.92)
                         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isPlaying)
                         .transition(.opacity)
-                        .trackSkipSwipe(playerState: playerState)
                         .padding(.horizontal, coverHPadding)
                 }
             }

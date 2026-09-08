@@ -18,6 +18,7 @@ struct LyricsLineView: View {
     let currentIndex: Int?
     let isSynced: Bool
     let isTappable: Bool
+    var foregroundColor: Color = .white
     let onTap: () -> Void
 
     private var distance: Int {
@@ -49,7 +50,7 @@ struct LyricsLineView: View {
             .font(.system(.title, design: .rounded, weight: isCurrent ? .bold : .regular))
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundStyle(.white.opacity(opacity))
+            .foregroundStyle(foregroundColor.opacity(opacity))
             // Weight/opacity animate as the index advances; font size is constant so the row
             // height never changes and the stack doesn't jump (that jump read as ghosting too).
             .animation(.easeInOut(duration: 0.2), value: currentIndex)

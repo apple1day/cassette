@@ -24,7 +24,7 @@ struct CachedLyricsTests {
         context.insert(CachedLyrics(songId: songId, serverId: serverId, jsonPayload: Data("{}".utf8)))
         try context.save()
 
-        let key = "\(serverId.uuidString):\(songId)"
+        let key = "v2:\(serverId.uuidString):\(songId)"
         let results = try context.fetch(
             FetchDescriptor<CachedLyrics>(predicate: #Predicate { $0.compositeKey == key })
         )
