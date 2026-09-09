@@ -103,9 +103,13 @@ struct LyricsView: View {
             }
             .onScrollPhaseChange { _, newPhase in
                 switch newPhase {
-                case .interacting:
+                case .tracking, .interacting, .decelerating:
+                    // Deceleration is still user-driven scrolling. Keep auto-follow
+                    // suspended until the scroll view is genuinely idle, otherwise a
+                    // lyric tick can start scrollTo while momentum is still moving it.
+                    guard !viewModel.isUserScrolling else { return }
                     viewModel.userStartedScrolling()
-                case .decelerating, .idle:
+                case .idle:
                     guard viewModel.isUserScrolling else { return }
                     viewModel.userStoppedScrolling()
                 default:

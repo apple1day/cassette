@@ -303,12 +303,24 @@ struct LyricsViewModelScrollTests {
         #expect(vm.isUserScrolling == true)
     }
 
-    @Test func isUserScrolling_resetAfter5Seconds() async throws {
+    @Test func userStoppedScrolling_resetsAfterGracePeriod() async throws {
         let (vm, _) = try makeViewModel()
         vm.userStartedScrolling()
         #expect(vm.isUserScrolling == true)
-        // Wait slightly over 5s for the Task.sleep to complete
-        try await Task.sleep(for: .seconds(5.1))
+        vm.userStoppedScrolling()
+        // Wait slightly over the three-second post-momentum grace period.
+        try await Task.sleep(for: .seconds(3.1))
+        #expect(vm.isUserScrolling == false)
+    }
+
+    @Test func hidingLyrics_clearsManualScrollState() throws {
+        let (vm, _) = try makeViewModel()
+        vm.setVisible(true)
+        vm.userStartedScrolling()
+        #expect(vm.isUserScrolling == true)
+
+        vm.setVisible(false)
+
         #expect(vm.isUserScrolling == false)
     }
 }

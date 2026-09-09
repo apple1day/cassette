@@ -16,7 +16,7 @@ struct MainTabView: View {
     @Namespace private var playerZoom
     private let fullPlayerZoomID = "full-player"
 
-    private enum AppTab: Hashable { case home, discover, search }
+    private enum AppTab: Hashable { case home, offline, discover, search }
 
     private var hasTrack: Bool {
         container?.playerState.currentTrack != nil || container?.playerState.isLiveStream == true
@@ -85,6 +85,12 @@ struct MainTabView: View {
             Tab("歌曲", systemImage: "music.note", value: AppTab.home) {
                 NavigationStack(path: $homePath) {
                     HomeView()
+                }
+            }
+
+            Tab("离线", systemImage: "arrow.down.circle.fill", value: AppTab.offline) {
+                NavigationStack {
+                    DownloadedView()
                 }
             }
 

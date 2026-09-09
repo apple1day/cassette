@@ -172,15 +172,19 @@ final class LyricsViewModel {
     func userStartedScrolling() {
         isUserScrolling = true
         resumeTask?.cancel()
+        resumeTask = nil
+    }
+
+    func userStoppedScrolling() {
+        // Keep the manually selected reading position for a short grace period after
+        // momentum has completely stopped, then let LyricsView centre the current line.
+        // Starting this timer on touch-down allowed it to expire during a long drag.
+        resumeTask?.cancel()
         resumeTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled else { return }
             await MainActor.run { self?.isUserScrolling = false }
         }
-    }
-
-    func userStoppedScrolling() {
-        userStartedScrolling()
     }
 
     // MARK: - Language selection
@@ -208,6 +212,9 @@ final class LyricsViewModel {
         if !visible {
             resumeTask?.cancel()
             resumeTask = nil
+            // Do not carry a cancelled manual-scroll state into the next presentation;
+            // without this reset auto-follow can remain disabled forever after dismissal.
+            isUserScrolling = false
         } else {
             // A paused player has no tracking timer. Sample once on appearance so
             // opening lyrics while paused still highlights and centres the right line.

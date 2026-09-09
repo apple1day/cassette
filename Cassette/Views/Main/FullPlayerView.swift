@@ -40,11 +40,16 @@ private extension View {
     /// still seeks). `contentShape` keeps the full slot hit-testable past the fade mask.
     @ViewBuilder
     func lyricsTapToDismiss(isAutoLyricsMode: Bool, onDismiss: @escaping () -> Void) -> some View {
-        contentShape(Rectangle())
+        // Keep `content` inside the conditional branches. A standalone expression here
+        // plus another expression in the branch makes ViewBuilder return TWO copies of
+        // the complete LyricsView. They initially overlap, then separate as soon as only
+        // one ScrollView responds to a vertical drag — the visible double/ghosted lyrics.
         if isAutoLyricsMode {
-            highPriorityGesture(TapGesture().onEnded { onDismiss() })
+            contentShape(Rectangle())
+                .highPriorityGesture(TapGesture().onEnded { onDismiss() })
         } else {
-            onTapGesture { onDismiss() }
+            contentShape(Rectangle())
+                .onTapGesture { onDismiss() }
         }
     }
 }
@@ -851,6 +856,15 @@ private struct TrackInfoSection: View {
                             }
                             if let format = playerState.currentTrack?.audioFormat {
                                 AudioFormatBadge(format: format, color: secondaryContentColor)
+                            }
+                            if playerState.currentTrack?.isDownloaded == true {
+                                Label("本地", systemImage: "arrow.down.circle.fill")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(secondaryContentColor)
+                                    .padding(.horizontal, CassetteSpacing.s)
+                                    .padding(.vertical, 3)
+                                    .background(.white.opacity(0.12), in: Capsule())
+                                    .accessibilityLabel("已下载，可离线播放")
                             }
                         }
                     }

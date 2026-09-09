@@ -432,12 +432,12 @@
         }
       }
     },
-    "%@ 首歌曲 · 已下载 %@ 首" : {
+    "%@ 首歌曲 · %@ 首可离线" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$@ 首歌曲 · 已下载 %2$@ 首"
+            "value" : "%1$@ 首歌曲 · %2$@ 首可离线"
           }
         }
       }
@@ -1592,6 +1592,9 @@
         }
       }
     },
+    "%lld 个专辑或歌单尚未完整下载" : {
+
+    },
     "%lld 首" : {
 
     },
@@ -1649,6 +1652,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld/%lld 首曲目"
+          }
+        }
+      }
+    },
+    "%lld/%lld 首" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld 首"
           }
         }
       }
@@ -3268,6 +3281,7 @@
       }
     },
     "Albums and playlists you download will be available here, even offline." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -6285,6 +6299,7 @@
       }
     },
     "Connect to a server to manage downloads." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9512,9 +9527,6 @@
         }
       }
     },
-    "Download All" : {
-
-    },
     "Download failed: %@" : {
       "localizations" : {
         "de" : {
@@ -9722,9 +9734,6 @@
           }
         }
       }
-    },
-    "Downloaded" : {
-
     },
     "Downloaded Albums" : {
       "localizations" : {
@@ -17557,6 +17566,7 @@
       }
     },
     "No Server" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18390,6 +18400,7 @@
       }
     },
     "Nothing downloaded" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -19741,9 +19752,6 @@
           }
         }
       }
-    },
-    "Play Local" : {
-
     },
     "Play Next" : {
       "localizations" : {
@@ -31827,19 +31835,37 @@
         }
       }
     },
+    "下载全部" : {
+
+    },
     "专辑" : {
+
+    },
+    "仅播本地" : {
 
     },
     "删除下载" : {
 
     },
-    "在线歌曲" : {
+    "在歌曲、专辑或歌单中点击下载，即使没有网络也能播放。" : {
+
+    },
+    "尚未连接音乐库" : {
 
     },
     "已下载" : {
 
     },
     "已下载 %@ 首歌曲" : {
+
+    },
+    "已下载，可离线播放" : {
+
+    },
+    "已全部下载" : {
+
+    },
+    "当前为离线模式" : {
 
     },
     "我的" : {
@@ -31851,7 +31877,13 @@
     "搜索" : {
 
     },
+    "搜索本地歌曲、歌手、专辑" : {
+
+    },
     "搜索歌曲、歌手、专辑…" : {
+
+    },
+    "播放全部" : {
 
     },
     "播放本地歌曲" : {
@@ -31863,10 +31895,22 @@
     "暂无本地音乐" : {
 
     },
+    "本地" : {
+
+    },
+    "本地播放" : {
+
+    },
+    "本地收藏已完整保存" : {
+
+    },
     "本地歌单" : {
 
     },
     "本地歌曲" : {
+
+    },
+    "本地歌曲 · %lld" : {
 
     },
     "本地音乐 · 离线播放" : {
@@ -31884,7 +31928,37 @@
     "正在从服务器刷新…" : {
 
     },
+    "离线" : {
+
+    },
+    "离线专辑 · %lld" : {
+
+    },
+    "离线歌单 · %lld" : {
+
+    },
+    "离线音乐" : {
+
+    },
+    "网络可用" : {
+
+    },
+    "还没有离线音乐" : {
+
+    },
     "连接你的电脑后，在歌曲页或歌单页下载音乐，即可离线播放。" : {
+
+    },
+    "连接服务器后，下载的音乐会保存在这里。" : {
+
+    },
+    "随时可播" : {
+
+    },
+    "随机播放" : {
+
+    },
+    "音乐库" : {
 
     }
   },

@@ -8,10 +8,9 @@ import SwiftUI
 /// Single lyric line in the mainstream (Apple Music / Netease Cloud) style.
 ///
 /// The current line is emphasised with a bold weight; every other line falls off
-/// in opacity with distance from it. No blur and no per-line scale — blurring text
-/// near the list's top/bottom fade produced a ghosted "double image", and scaling the
-/// current line made the stack shift as the index advanced. Opacity + weight only keeps a
-/// clean, readable, non-shifting column that stays legible over the gradient mask.
+/// in opacity with distance from it. No blur, scale, or implicit typography animation:
+/// those effects can change a wrapped line's measured height while the parent scroll view
+/// is moving, allowing adjacent rows to be drawn on top of one another.
 struct LyricsLineView: View {
     let value: String
     let index: Int
@@ -49,11 +48,18 @@ struct LyricsLineView: View {
         Text(value)
             .font(.system(.title, design: .rounded, weight: isCurrent ? .bold : .regular))
             .multilineTextAlignment(.leading)
+            .lineLimit(nil)
+            // A lyric is one vertical row even when it wraps over several visual lines.
+            // Fix its vertical size to the full Text layout before VStack places the next
+            // row; otherwise a constrained/animated player slot can temporarily propose a
+            // one-line height while Text still draws every wrapped line outside that frame.
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .foregroundStyle(foregroundColor.opacity(opacity))
-            // Weight/opacity animate as the index advances; font size is constant so the row
-            // height never changes and the stack doesn't jump (that jump read as ghosting too).
-            .animation(.easeInOut(duration: 0.2), value: currentIndex)
+            // Keep row measurement and glyph drawing in the same transaction. The list's
+            // scrollTo animation already supplies the motion; animating Text as well can
+            // interpolate a bold line through a different wrap and leave overlap artefacts.
+            .transaction { transaction in transaction.animation = nil }
             .contentShape(Rectangle())
             .onTapGesture {
                 if isTappable { onTap() }

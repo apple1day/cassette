@@ -155,7 +155,11 @@ struct SongsListView: View {
                         }
                     }
                 }
+                #if os(macOS)
+                .listStyle(.plain)
+                #else
                 .listStyle(.insetGrouped)
+                #endif
                 .miniPlayerBottomMargin()
             }
         }
@@ -335,10 +339,10 @@ struct SongsListView: View {
                 .frame(width: 58, height: 58)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("在线歌曲")
+                    Text("音乐库")
                         .font(.title2.bold())
                         .foregroundStyle(.white)
-                    Text("\(songs.count.formatted()) 首歌曲 · 已下载 \(localSongs.count.formatted()) 首")
+                    Text("\(songs.count.formatted()) 首歌曲 · \(localSongs.count.formatted()) 首可离线")
                         .font(.cassetteCaption)
                         .foregroundStyle(.white.opacity(0.78))
                 }
@@ -349,11 +353,11 @@ struct SongsListView: View {
                 Button {
                     Task { try? await container?.playerService.play(tracks: songs, startIndex: 0) }
                 } label: {
-                    Label("Play", systemImage: "play.fill").frame(maxWidth: .infinity)
+                    Label("播放全部", systemImage: "play.fill").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
-                .foregroundStyle(.red)
+                .foregroundStyle(CassetteColors.Violet.v700)
 
                 Button {
                     Task { @MainActor in
@@ -365,7 +369,7 @@ struct SongsListView: View {
                         }
                     }
                 } label: {
-                    Label("Play Local", systemImage: "iphone.and.arrow.forward").frame(maxWidth: .infinity)
+                    Label("仅播本地", systemImage: "iphone.and.arrow.forward").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(.white)
@@ -387,9 +391,9 @@ struct SongsListView: View {
                         ProgressView().tint(.white)
                         Text("Downloading \(vm.downloadCompletedCount)/\(vm.downloadTotalCount)")
                     } else if localSongs.count == songs.count {
-                        Label("Downloaded", systemImage: "checkmark.circle.fill")
+                        Label("已全部下载", systemImage: "checkmark.circle.fill")
                     } else {
-                        Label("Download All", systemImage: "arrow.down.circle.fill")
+                        Label("下载全部", systemImage: "arrow.down.circle.fill")
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -401,13 +405,13 @@ struct SongsListView: View {
         .padding(16)
         .background(
             LinearGradient(
-                colors: [Color(red: 0.92, green: 0.16, blue: 0.18), Color(red: 0.72, green: 0.05, blue: 0.09)],
+                colors: [CassetteColors.Violet.v500, CassetteColors.Violet.v800],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             ),
             in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-        .shadow(color: Color.red.opacity(0.18), radius: 14, y: 7)
+        .shadow(color: CassetteColors.Violet.v700.opacity(0.22), radius: 14, y: 7)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
         .padding(.vertical, 8)
