@@ -6,6 +6,7 @@
 #if os(iOS)
 import SwiftUI
 import SwiftData
+import SwiftSonic
 import AVKit
 
 /// iOS song presentation only. Radio keeps the existing live-stream player.
