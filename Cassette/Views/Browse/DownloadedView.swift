@@ -144,6 +144,14 @@ private struct DownloadedContent: View {
         sortedTracks.map(DisplayableSong.init(from:))
     }
 
+    /// "未播放"沿用本地列表的完播统计口径：从未有过一次达到歌曲时长 60% 的播放。
+    private var unplayedSongs: [DisplayableSong] {
+        let counts = qualifiedPlayCounts
+        return tracks
+            .filter { counts[$0.songId, default: 0] == 0 }
+            .map(DisplayableSong.init(from:))
+    }
+
     private var usedStorage: String {
         ByteCountFormatter.string(
             fromByteCount: tracks.map(\.fileSize).reduce(0, +),
@@ -343,6 +351,18 @@ private struct DownloadedContent: View {
                 .tint(.white)
                 .disabled(localSongs.isEmpty || isDeletingAll)
             }
+
+            Button {
+                play(unplayedSongs.shuffled(), at: 0)
+            } label: {
+                Label("随机播放未播放的歌曲", systemImage: "shuffle.circle.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.white)
+            .disabled(unplayedSongs.isEmpty || isDeletingAll)
+            .accessibilityLabel("随机播放未播放的歌曲")
+            .accessibilityValue(unplayedSongs.isEmpty ? "没有未播放的歌曲" : "还有 \(unplayedSongs.count) 首未播放歌曲")
 
             Button(role: .destructive) {
                 showDeleteAllConfirmation = true
