@@ -18,23 +18,28 @@ struct DownloadedView: View {
                 EmptyStateView(
                     systemImage: "arrow.down.circle",
                     title: "尚未连接音乐库",
-                    subtitle: "连接服务器后，下载的音乐会保存在这里。"
+                    subtitle: "连接服务器后，下载的歌曲会保存在这里。"
                 )
             }
         }
         .cassetteContentWidth()
-        .navigationTitle("离线音乐")
+        .navigationTitle("本地歌曲")
     }
 }
 
-// MARK: - Content
+// MARK: - Song-only offline content
 
 private struct DownloadedContent: View {
     let serverId: UUID
     @Environment(\.appContainer) private var container
+
+    // Album / playlist records are retained only as internal download bookkeeping so older
+    // downloads can still be cleaned up correctly. They are deliberately NOT projected into
+    // the offline UI: the user-facing offline library is song-only.
     @Query private var albums: [DownloadedAlbum]
     @Query private var playlists: [DownloadedPlaylist]
     @Query private var tracks: [DownloadedTrack]
+
     @State private var searchText = ""
     @State private var showDeleteAllConfirmation = false
     @State private var isDeletingAll = false
@@ -56,10 +61,6 @@ private struct DownloadedContent: View {
         )
     }
 
-    private var displayAlbums: [DownloadedAlbumDisplay] {
-        DownloadedAlbumMerger.merge(records: albums, tracks: tracks)
-    }
-
     private var localSongs: [DisplayableSong] {
         tracks.map(DisplayableSong.init(from:))
     }
@@ -71,33 +72,11 @@ private struct DownloadedContent: View {
         )
     }
 
-    private var incompleteCollectionsCount: Int {
-        let albumCount = displayAlbums.filter { album in
-            guard let total = album.totalTracksCount else { return false }
-            return album.downloadedTracksCount < total
-        }.count
-        return albumCount + playlists.filter { !$0.isComplete }.count
-    }
-
-    private var filteredAlbums: [DownloadedAlbumDisplay] {
-        guard !searchText.isEmpty else { return displayAlbums }
-        return displayAlbums.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText)
-                || ($0.artist?.localizedCaseInsensitiveContains(searchText) == true)
-        }
-    }
-
-    private var filteredPlaylists: [DownloadedPlaylist] {
-        guard !searchText.isEmpty else { return playlists }
-        return playlists.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-    }
-
     private var filteredTracks: [DownloadedTrack] {
         guard !searchText.isEmpty else { return tracks }
         return tracks.filter {
             $0.title.localizedCaseInsensitiveContains(searchText)
                 || ($0.artist?.localizedCaseInsensitiveContains(searchText) == true)
-                || ($0.album?.localizedCaseInsensitiveContains(searchText) == true)
         }
     }
 
@@ -107,11 +86,11 @@ private struct DownloadedContent: View {
 
     var body: some View {
         Group {
-            if displayAlbums.isEmpty && playlists.isEmpty && tracks.isEmpty {
+            if tracks.isEmpty {
                 EmptyStateView(
-                    systemImage: "arrow.down.circle",
-                    title: "还没有离线音乐",
-                    subtitle: "在歌曲、专辑或歌单中点击下载，即使没有网络也能播放。"
+                    systemImage: "music.note",
+                    title: "还没有本地歌曲",
+                    subtitle: "在歌曲列表中点击下载，歌曲会直接出现在这里。"
                 )
             } else {
                 #if os(macOS)
@@ -122,7 +101,7 @@ private struct DownloadedContent: View {
             }
         }
         .confirmationDialog(
-            "删除全部本地音乐？",
+            "删除全部本地歌曲？",
             isPresented: $showDeleteAllConfirmation,
             titleVisibility: .visible
         ) {
@@ -131,129 +110,49 @@ private struct DownloadedContent: View {
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("将删除当前音乐库已下载的所有歌曲、离线专辑和离线歌单。此操作不会删除服务器上的音乐。")
+            Text("将删除当前音乐库已下载的全部 \(tracks.count) 首歌曲。此操作不会删除服务器上的音乐。")
         }
     }
 
     #if os(macOS)
     private var downloadedListMacOS: some View {
-        ScrollViewReader { proxy in
-            List {
-                if !displayAlbums.isEmpty {
-                    Section("Albums") {
-                        ForEach(displayAlbums) { display in
-                            NavigationLink(value: HomeDestination.downloadedAlbum(display)) {
-                                HStack(spacing: CassetteSpacing.m) {
-                                    CoverArtCard(id: display.coverArtId ?? display.albumId, size: 56)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(display.name)
-                                            .font(.cassetteCellTitle)
-                                            .lineLimit(1)
-                                        if let artist = display.artist {
-                                            Text(artist)
-                                                .font(.cassetteCellSubtitle)
-                                                .foregroundStyle(.secondary)
-                                                .lineLimit(1)
-                                        }
-                                        Text("\(display.downloadedTracksCount) tracks")
-                                            .font(.cassetteCaption)
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                    Spacer(minLength: 0)
-                                }
-                                .padding(.vertical, CassetteSpacing.xs)
-                            }
-                            .id(display.id)
-                        }
-                    }
-                }
-
-                if !playlists.isEmpty {
-                    Section("Playlists") {
-                        ForEach(playlists) { playlist in
-                            NavigationLink(value: HomeDestination.playlistById(id: playlist.playlistId, name: playlist.name, coverArtId: playlist.coverArtId)) {
-                                HStack(spacing: CassetteSpacing.m) {
-                                    CoverArtCard(id: playlist.coverArtId ?? playlist.playlistId, size: 56)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(playlist.name)
-                                            .font(.cassetteCellTitle)
-                                            .lineLimit(1)
-                                        Text("\(playlist.tracksCount) tracks\(playlist.isComplete ? "" : " (incomplete)")")
-                                            .font(.cassetteCaption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    Spacer(minLength: 0)
-                                }
-                                .padding(.vertical, CassetteSpacing.xs)
-                            }
-                        }
-                    }
-                }
-
-                if !tracks.isEmpty {
-                    Section("Songs") {
-                        ForEach(Array(localSongs.enumerated()), id: \.element.id) { index, song in
-                            SongRow(
-                                song: song,
-                                index: index + 1,
-                                showCoverArt: true,
-                                onRemoveDownload: { removeDownload(song) }
-                            )
-                            .contentShape(Rectangle())
-                            .onTapGesture { play(localSongs, at: index) }
-                        }
-                    }
+        List {
+            Section("本地歌曲 · \(filteredTracks.count)") {
+                ForEach(Array(filteredSongs.enumerated()), id: \.element.id) { index, song in
+                    SongRow(
+                        song: song,
+                        index: index + 1,
+                        showCoverArt: true,
+                        onRemoveDownload: { removeDownload(song) }
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture { play(filteredSongs, at: index) }
                 }
             }
-            .listStyle(.plain)
         }
+        .listStyle(.plain)
+        .searchable(text: $searchText, prompt: "搜索本地歌曲、歌手")
     }
     #endif
 
     private var downloadedListiOS: some View {
         List {
             offlineHero
-                .listRowInsets(EdgeInsets(top: CassetteSpacing.s, leading: CassetteSpacing.l, bottom: CassetteSpacing.xxl, trailing: CassetteSpacing.l))
+                .listRowInsets(
+                    EdgeInsets(
+                        top: CassetteSpacing.s,
+                        leading: CassetteSpacing.l,
+                        bottom: CassetteSpacing.xxl,
+                        trailing: CassetteSpacing.l
+                    )
+                )
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
 
-            if !searchText.isEmpty && filteredAlbums.isEmpty && filteredPlaylists.isEmpty && filteredTracks.isEmpty {
+            if !searchText.isEmpty && filteredTracks.isEmpty {
                 ContentUnavailableView.search(text: searchText)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-            }
-
-            if !filteredAlbums.isEmpty {
-                Section("离线专辑 · \(filteredAlbums.count)") {
-                    ForEach(filteredAlbums) { display in
-                        NavigationLink {
-                            AlbumDetailView(
-                                albumId: display.albumId,
-                                albumName: display.name,
-                                coverArtId: display.coverArtId,
-                                mode: .downloadedOnly
-                            )
-                        } label: {
-                            downloadedAlbumRow(display)
-                        }
-                    }
-                }
-            }
-
-            if !filteredPlaylists.isEmpty {
-                Section("离线歌单 · \(filteredPlaylists.count)") {
-                    ForEach(filteredPlaylists) { playlist in
-                        NavigationLink {
-                            PlaylistDetailView(
-                                playlistId: playlist.playlistId,
-                                name: playlist.name,
-                                coverArtId: playlist.coverArtId
-                            )
-                        } label: {
-                            downloadedPlaylistRow(playlist)
-                        }
-                    }
-                }
             }
 
             if !filteredTracks.isEmpty {
@@ -279,29 +178,26 @@ private struct DownloadedContent: View {
             }
         }
         .listStyle(.plain)
-        .searchable(text: $searchText, prompt: "搜索本地歌曲、歌手、专辑")
+        .searchable(text: $searchText, prompt: "搜索本地歌曲、歌手")
         .miniPlayerBottomMargin()
     }
 
     private var offlineHero: some View {
         VStack(alignment: .leading, spacing: CassetteSpacing.l) {
             HStack(alignment: .top, spacing: CassetteSpacing.m) {
-                Image(systemName: "arrow.down.circle.fill")
+                Image(systemName: "music.note.list")
                     .font(.system(size: 27, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 58, height: 58)
                     .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: CassetteSpacing.xs) {
-                    Text("随时可播")
+                    Text("本地歌曲")
                         .font(.title2.bold())
                         .foregroundStyle(.white)
-                    Label(
-                        container?.serverState.isOnline == true ? "网络可用" : "当前为离线模式",
-                        systemImage: container?.serverState.isOnline == true ? "wifi" : "wifi.slash"
-                    )
-                    .font(.cassetteCaption)
-                    .foregroundStyle(.white.opacity(0.78))
+                    Label("\(tracks.count) 首歌曲，可离线播放", systemImage: "checkmark.circle.fill")
+                        .font(.cassetteCaption)
+                        .foregroundStyle(.white.opacity(0.78))
                 }
 
                 Spacer(minLength: 0)
@@ -313,25 +209,6 @@ private struct DownloadedContent: View {
                     .padding(.horizontal, CassetteSpacing.s)
                     .padding(.vertical, CassetteSpacing.xs)
                     .background(.white.opacity(0.14), in: Capsule())
-            }
-
-            HStack(spacing: 0) {
-                offlineStat(value: tracks.count.formatted(), label: "歌曲")
-                Divider().overlay(.white.opacity(0.22))
-                offlineStat(value: displayAlbums.count.formatted(), label: "专辑")
-                Divider().overlay(.white.opacity(0.22))
-                offlineStat(value: playlists.count.formatted(), label: "歌单")
-            }
-            .frame(height: 42)
-
-            if incompleteCollectionsCount > 0 {
-                Label("\(incompleteCollectionsCount) 个专辑或歌单尚未完整下载", systemImage: "exclamationmark.circle.fill")
-                    .font(.cassetteCaption)
-                    .foregroundStyle(.white.opacity(0.84))
-            } else {
-                Label("本地收藏已完整保存", systemImage: "checkmark.circle.fill")
-                    .font(.cassetteCaption)
-                    .foregroundStyle(.white.opacity(0.84))
             }
 
             HStack(spacing: CassetteSpacing.s) {
@@ -360,13 +237,13 @@ private struct DownloadedContent: View {
             Button(role: .destructive) {
                 showDeleteAllConfirmation = true
             } label: {
-                Label(isDeletingAll ? "正在删除…" : "删除全部本地音乐", systemImage: "trash")
+                Label(isDeletingAll ? "正在删除…" : "删除全部本地歌曲", systemImage: "trash")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
             .tint(.white)
-            .disabled(isDeletingAll || (tracks.isEmpty && albums.isEmpty && playlists.isEmpty))
-            .accessibilityLabel("删除全部本地音乐")
+            .disabled(isDeletingAll || tracks.isEmpty)
+            .accessibilityLabel("删除全部本地歌曲")
         }
         .padding(CassetteSpacing.l)
         .background(
@@ -378,73 +255,6 @@ private struct DownloadedContent: View {
             in: RoundedRectangle(cornerRadius: CassetteCornerRadius.hero, style: .continuous)
         )
         .shadow(color: CassetteColors.Violet.v700.opacity(0.22), radius: 16, y: 8)
-    }
-
-    private func offlineStat(value: String, label: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.headline)
-                .monospacedDigit()
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.7))
-        }
-        .foregroundStyle(.white)
-        .frame(maxWidth: .infinity)
-    }
-
-    private func downloadedAlbumRow(_ display: DownloadedAlbumDisplay) -> some View {
-        HStack(spacing: CassetteSpacing.m) {
-            CoverArtCard(id: display.coverArtId ?? display.albumId, size: 56)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(display.name)
-                    .font(.cassetteCellTitle)
-                    .lineLimit(1)
-                if let artist = display.artist {
-                    Text(artist)
-                        .font(.cassetteCellSubtitle)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                downloadProgressLabel(
-                    downloaded: display.downloadedTracksCount,
-                    total: display.totalTracksCount
-                )
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, CassetteSpacing.xs)
-    }
-
-    private func downloadedPlaylistRow(_ playlist: DownloadedPlaylist) -> some View {
-        HStack(spacing: CassetteSpacing.m) {
-            PlaylistCoverThumbnail(
-                playlistId: playlist.playlistId,
-                serverId: playlist.serverId,
-                coverArtId: playlist.coverArtId ?? playlist.playlistId,
-                title: playlist.name,
-                size: 56
-            )
-            VStack(alignment: .leading, spacing: 3) {
-                Text(playlist.name)
-                    .font(.cassetteCellTitle)
-                    .lineLimit(1)
-                downloadProgressLabel(downloaded: playlist.tracksCount, total: playlist.totalTracksCount)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, CassetteSpacing.xs)
-    }
-
-    private func downloadProgressLabel(downloaded: Int, total: Int?) -> some View {
-        let isComplete = total == nil || downloaded >= (total ?? downloaded)
-        return Label {
-            Text(total.map { "\(downloaded)/\($0) 首" } ?? "\(downloaded) 首")
-        } icon: {
-            Image(systemName: isComplete ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-        }
-        .font(.cassetteCaption)
-        .foregroundStyle(isComplete ? Color.secondary : Color.orange)
     }
 
     private func play(_ songs: [DisplayableSong], at index: Int) {
@@ -477,8 +287,9 @@ private struct DownloadedContent: View {
     private func removeAllDownloads() {
         guard !isDeletingAll, let container else { return }
 
-        // Snapshot IDs before any SwiftData rows are deleted. The @Query arrays update live,
-        // so iterating them directly while awaiting removals can skip elements.
+        // Snapshot all IDs before SwiftData starts publishing deletions. Album / playlist IDs are
+        // housekeeping only: clearing them prevents stale metadata created by older builds from
+        // surviving after the song-only library has been emptied.
         let songIds = Array(Set(tracks.map(\.songId)))
         let albumIds = Array(Set(albums.map(\.albumId)))
         let playlistIds = Array(Set(playlists.map(\.playlistId)))
@@ -488,7 +299,7 @@ private struct DownloadedContent: View {
         Task {
             defer { isDeletingAll = false }
 
-            // Do not keep AVPlayer attached to a file that is about to disappear.
+            // Do not keep the audio engine attached to a file that is about to disappear.
             if let currentId = container.playerState.currentTrack?.id,
                downloadedSongIds.contains(currentId) {
                 await container.playerService.stop()
@@ -496,8 +307,6 @@ private struct DownloadedContent: View {
 
             var failureCount = 0
 
-            // Delete physical song files first. Each removal also deletes its DownloadedTrack row
-            // and removes the song ID from downloaded-playlist metadata.
             for songId in songIds {
                 do {
                     try await container.downloadService.remove(songId: songId, serverId: serverId)
@@ -507,14 +316,14 @@ private struct DownloadedContent: View {
                 }
             }
 
-            // Then clear collection records. These are intentionally performed after the tracks so
-            // album/playlist reference-count logic cannot preserve files during a full purge.
+            // Remove legacy collection bookkeeping after every physical song is gone. This does
+            // not re-introduce album/playlist UI; it only avoids orphaned SwiftData records.
             for albumId in albumIds {
                 do {
                     try await container.downloadService.remove(albumId: albumId, serverId: serverId)
                 } catch {
                     failureCount += 1
-                    Logger.library.error("[OFFLINE] remove-all album \(albumId, privacy: .public) failed: \(error, privacy: .public)")
+                    Logger.library.error("[OFFLINE] remove-all album metadata \(albumId, privacy: .public) failed: \(error, privacy: .public)")
                 }
             }
 
@@ -523,15 +332,15 @@ private struct DownloadedContent: View {
                     try await container.downloadService.remove(playlistId: playlistId, serverId: serverId)
                 } catch {
                     failureCount += 1
-                    Logger.library.error("[OFFLINE] remove-all playlist \(playlistId, privacy: .public) failed: \(error, privacy: .public)")
+                    Logger.library.error("[OFFLINE] remove-all playlist metadata \(playlistId, privacy: .public) failed: \(error, privacy: .public)")
                 }
             }
 
             searchText = ""
             if failureCount == 0 {
-                container.toastService.showSuccess("已删除全部本地音乐")
+                container.toastService.showSuccess("已删除全部本地歌曲")
             } else {
-                container.toastService.showError("部分本地音乐删除失败（\(failureCount) 项），可再次点击删除全部重试")
+                container.toastService.showError("部分本地歌曲删除失败（\(failureCount) 项），可再次重试")
             }
         }
     }
