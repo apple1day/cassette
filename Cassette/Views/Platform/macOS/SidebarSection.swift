@@ -11,7 +11,6 @@ nonisolated enum SidebarSection: String, Hashable, Identifiable, CaseIterable {
     case radio
     case freshReleases
     case wrapped
-    case albums
     case artists
     case songs
     case playlists
@@ -26,7 +25,6 @@ nonisolated enum SidebarSection: String, Hashable, Identifiable, CaseIterable {
         case .radio:         return "Radio"
         case .freshReleases: return "Fresh Releases"
         case .wrapped:       return "Wrapped"
-        case .albums:        return "Albums"
         case .artists:   return "Artists"
         case .songs:     return "Songs"
         case .playlists: return "Playlists"
@@ -41,7 +39,6 @@ nonisolated enum SidebarSection: String, Hashable, Identifiable, CaseIterable {
         case .radio:         return "antenna.radiowaves.left.and.right"
         case .freshReleases: return "sparkles"
         case .wrapped:       return "play.square.stack"
-        case .albums:        return "square.stack"
         case .artists:   return "music.mic"
         case .songs:     return "music.note"
         case .playlists: return "music.note.list"
