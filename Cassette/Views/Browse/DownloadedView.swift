@@ -36,6 +36,8 @@ private struct DownloadedContent: View {
     @Query private var playlists: [DownloadedPlaylist]
     @Query private var tracks: [DownloadedTrack]
     @State private var searchText = ""
+    @State private var showDeleteAllConfirmation = false
+    @State private var isDeletingAll = false
 
     init(serverId: UUID) {
         self.serverId = serverId
@@ -104,18 +106,32 @@ private struct DownloadedContent: View {
     }
 
     var body: some View {
-        if displayAlbums.isEmpty && playlists.isEmpty && tracks.isEmpty {
-            EmptyStateView(
-                systemImage: "arrow.down.circle",
-                title: "还没有离线音乐",
-                subtitle: "在歌曲、专辑或歌单中点击下载，即使没有网络也能播放。"
-            )
-        } else {
-            #if os(macOS)
-            downloadedListMacOS
-            #else
-            downloadedListiOS
-            #endif
+        Group {
+            if displayAlbums.isEmpty && playlists.isEmpty && tracks.isEmpty {
+                EmptyStateView(
+                    systemImage: "arrow.down.circle",
+                    title: "还没有离线音乐",
+                    subtitle: "在歌曲、专辑或歌单中点击下载，即使没有网络也能播放。"
+                )
+            } else {
+                #if os(macOS)
+                downloadedListMacOS
+                #else
+                downloadedListiOS
+                #endif
+            }
+        }
+        .confirmationDialog(
+            "删除全部本地音乐？",
+            isPresented: $showDeleteAllConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("删除全部", role: .destructive) {
+                removeAllDownloads()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("将删除当前音乐库已下载的所有歌曲、离线专辑和离线歌单。此操作不会删除服务器上的音乐。")
         }
     }
 
@@ -328,7 +344,7 @@ private struct DownloadedContent: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
                 .foregroundStyle(CassetteColors.Violet.v700)
-                .disabled(localSongs.isEmpty)
+                .disabled(localSongs.isEmpty || isDeletingAll)
 
                 Button {
                     play(localSongs.shuffled(), at: 0)
@@ -338,8 +354,19 @@ private struct DownloadedContent: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(.white)
-                .disabled(localSongs.isEmpty)
+                .disabled(localSongs.isEmpty || isDeletingAll)
             }
+
+            Button(role: .destructive) {
+                showDeleteAllConfirmation = true
+            } label: {
+                Label(isDeletingAll ? "正在删除…" : "删除全部本地音乐", systemImage: "trash")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.white)
+            .disabled(isDeletingAll || (tracks.isEmpty && albums.isEmpty && playlists.isEmpty))
+            .accessibilityLabel("删除全部本地音乐")
         }
         .padding(CassetteSpacing.l)
         .background(
@@ -443,6 +470,68 @@ private struct DownloadedContent: View {
             } catch {
                 Logger.library.error("[OFFLINE] remove failed: \(error, privacy: .public)")
                 container?.toastService.showError("删除下载失败")
+            }
+        }
+    }
+
+    private func removeAllDownloads() {
+        guard !isDeletingAll, let container else { return }
+
+        // Snapshot IDs before any SwiftData rows are deleted. The @Query arrays update live,
+        // so iterating them directly while awaiting removals can skip elements.
+        let songIds = Array(Set(tracks.map(\.songId)))
+        let albumIds = Array(Set(albums.map(\.albumId)))
+        let playlistIds = Array(Set(playlists.map(\.playlistId)))
+        let downloadedSongIds = Set(songIds)
+
+        isDeletingAll = true
+        Task {
+            defer { isDeletingAll = false }
+
+            // Do not keep AVPlayer attached to a file that is about to disappear.
+            if let currentId = container.playerState.currentTrack?.id,
+               downloadedSongIds.contains(currentId) {
+                await container.playerService.stop()
+            }
+
+            var failureCount = 0
+
+            // Delete physical song files first. Each removal also deletes its DownloadedTrack row
+            // and removes the song ID from downloaded-playlist metadata.
+            for songId in songIds {
+                do {
+                    try await container.downloadService.remove(songId: songId, serverId: serverId)
+                } catch {
+                    failureCount += 1
+                    Logger.library.error("[OFFLINE] remove-all song \(songId, privacy: .public) failed: \(error, privacy: .public)")
+                }
+            }
+
+            // Then clear collection records. These are intentionally performed after the tracks so
+            // album/playlist reference-count logic cannot preserve files during a full purge.
+            for albumId in albumIds {
+                do {
+                    try await container.downloadService.remove(albumId: albumId, serverId: serverId)
+                } catch {
+                    failureCount += 1
+                    Logger.library.error("[OFFLINE] remove-all album \(albumId, privacy: .public) failed: \(error, privacy: .public)")
+                }
+            }
+
+            for playlistId in playlistIds {
+                do {
+                    try await container.downloadService.remove(playlistId: playlistId, serverId: serverId)
+                } catch {
+                    failureCount += 1
+                    Logger.library.error("[OFFLINE] remove-all playlist \(playlistId, privacy: .public) failed: \(error, privacy: .public)")
+                }
+            }
+
+            searchText = ""
+            if failureCount == 0 {
+                container.toastService.showSuccess("已删除全部本地音乐")
+            } else {
+                container.toastService.showError("部分本地音乐删除失败（\(failureCount) 项），可再次点击删除全部重试")
             }
         }
     }
