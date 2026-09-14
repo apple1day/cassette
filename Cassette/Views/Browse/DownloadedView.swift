@@ -63,6 +63,8 @@ private struct DownloadedContent: View {
     @Query private var tracks: [DownloadedTrack]
     @Query private var playbackEvents: [PlaybackEvent]
 
+    @AppStorage(EarlySkipStore.revisionKey) private var earlySkipRevision = 0
+    @State private var earlySkipCounts: [String: Int]
     @State private var searchText = ""
     @State private var sortOption: LocalSongSort = .title
     @State private var showDeleteAllConfirmation = false
@@ -72,6 +74,7 @@ private struct DownloadedContent: View {
         self.serverId = serverId
         let sid = serverId
         let statsServerId = serverId.uuidString
+        _earlySkipCounts = State(initialValue: EarlySkipStore.counts(serverId: sid))
         _albums = Query(
             filter: #Predicate<DownloadedAlbum> { album in album.serverId == sid },
             sort: [SortDescriptor(\DownloadedAlbum.name)]
@@ -110,6 +113,10 @@ private struct DownloadedContent: View {
 
     private func playCount(for songId: String) -> Int {
         qualifiedPlayCounts[songId, default: 0]
+    }
+
+    private func skipCount(for songId: String) -> Int {
+        earlySkipCounts[songId, default: 0]
     }
 
     private func titleComesBefore(_ lhs: DownloadedTrack, _ rhs: DownloadedTrack) -> Bool {
@@ -197,6 +204,9 @@ private struct DownloadedContent: View {
                 sortMenu
             }
         }
+        .onChange(of: earlySkipRevision) { _, _ in
+            earlySkipCounts = EarlySkipStore.counts(serverId: serverId)
+        }
         .confirmationDialog(
             "删除全部本地歌曲？",
             isPresented: $showDeleteAllConfirmation,
@@ -237,6 +247,7 @@ private struct DownloadedContent: View {
                         index: index + 1,
                         showCoverArt: true,
                         playCount: playCount(for: song.id),
+                        skipCount: skipCount(for: song.id),
                         onRemoveDownload: { removeDownload(song) }
                     )
                     .contentShape(Rectangle())
@@ -277,6 +288,7 @@ private struct DownloadedContent: View {
                             index: index + 1,
                             showCoverArt: true,
                             playCount: playCount(for: song.id),
+                            skipCount: skipCount(for: song.id),
                             onRemoveDownload: { removeDownload(song) }
                         )
                         .contentShape(Rectangle())
@@ -313,7 +325,10 @@ private struct DownloadedContent: View {
                     Label("\(tracks.count) 首歌曲，可离线播放", systemImage: "checkmark.circle.fill")
                         .font(.cassetteCaption)
                         .foregroundStyle(.white.opacity(0.78))
-                    Text("完播次数按单次实际播放达到歌曲时长 60% 统计")
+                    Text("完播次数：单次实际播放达到歌曲时长 60%")
+                        .font(.cassetteCaption)
+                        .foregroundStyle(.white.opacity(0.68))
+                    Text("切歌次数：实际播放不足 15 秒后切到其他歌曲")
                         .font(.cassetteCaption)
                         .foregroundStyle(.white.opacity(0.68))
                 }
