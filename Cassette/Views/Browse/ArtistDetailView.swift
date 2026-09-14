@@ -113,11 +113,6 @@ struct ArtistDetailView: View {
                         ScrollView {
                             artistHero(vm: vm)
                             VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
-                                // Hidden offline: downloads carry no release year, so "Latest" would be
-                                // an arbitrary pick.
-                                if !vm.isOffline, let featured = latestRelease(vm) {
-                                    featuredReleaseSection(featured)
-                                }
                                 if vm.isLoadingTopSongs {
                                     topSongsSkeleton
                                 } else if !vm.topSongs.isEmpty {
@@ -134,7 +129,6 @@ struct ArtistDetailView: View {
                                 } else if !liked.isEmpty {
                                     likedSongsSection(liked)
                                 }
-                                albumsSection(albums)
                                 if vm.isLoadingSimilarArtists || !vm.similarArtists.isEmpty {
                                     similarArtistsSection(vm: vm)
                                 }

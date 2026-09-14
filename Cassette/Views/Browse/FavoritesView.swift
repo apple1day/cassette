@@ -32,7 +32,7 @@ struct FavoritesView: View {
 
     @ViewBuilder
     private func content(_ vm: FavoritesViewModel) -> some View {
-        let isEmpty = vm.songs.isEmpty && vm.albums.isEmpty && vm.artists.isEmpty
+        let isEmpty = vm.songs.isEmpty && vm.artists.isEmpty
         if vm.isLoading && isEmpty {
             LoadingStateView()
         } else if let error = vm.error, isEmpty {
@@ -46,13 +46,12 @@ struct FavoritesView: View {
             EmptyStateView(
                 systemImage: "star",
                 title: "No favorites yet",
-                subtitle: "Songs, albums, and artists you favorite will appear here."
+                subtitle: "Songs and artists you favorite will appear here."
             )
         } else {
             let displayableSongs = vm.songs.map { DisplayableSong(from: $0) }
             List {
                 songsSection(displayableSongs)
-                albumsSection(vm.albums)
                 artistsSection(vm.artists)
             }
             .listStyle(.plain)
@@ -111,25 +110,6 @@ struct FavoritesView: View {
                                 }
                             }
                         }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func albumsSection(_ albums: [AlbumID3]) -> some View {
-        if !albums.isEmpty {
-            Section("Albums") {
-                ForEach(albums) { album in
-                    NavigationLink(value: HomeDestination.album(album)) {
-                        AlbumRow(
-                            albumId: album.id,
-                            name: album.name,
-                            artist: album.artist,
-                            year: album.year,
-                            coverArtId: album.coverArt
-                        )
-                    }
                 }
             }
         }

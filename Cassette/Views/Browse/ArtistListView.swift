@@ -267,9 +267,6 @@ private struct OfflineArtistRow: View {
                 Text(artist.name)
                     .font(.cassetteCellTitle)
                     .lineLimit(1)
-                Text("\(artist.albums.count) albums")
-                    .font(.cassetteCaption)
-                    .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }

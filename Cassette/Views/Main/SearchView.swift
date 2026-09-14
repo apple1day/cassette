@@ -277,7 +277,6 @@ struct SearchView: View {
             )
         } else if let results = vm.searchResults, hasAnyResults(results) {
             artistResultsSection(visibleArtists(from: results))
-            albumResultsSection(results.album ?? [])
             SearchSongResultsSection(
                 songs: (results.song ?? []).map { DisplayableSong(from: $0) },
                 onAddToPlaylist: { s in songToAddToPlaylist = s }
@@ -290,7 +289,7 @@ struct SearchView: View {
     }
 
     private func hasAnyResults(_ results: SearchResult3) -> Bool {
-        !visibleArtists(from: results).isEmpty || !(results.album?.isEmpty ?? true) || !(results.song?.isEmpty ?? true)
+        !visibleArtists(from: results).isEmpty || !(results.song?.isEmpty ?? true)
     }
 
     @ViewBuilder
@@ -300,25 +299,6 @@ struct SearchView: View {
                 ForEach(artists) { artist in
                     NavigationLink(value: artist) {
                         ArtistRow(artist: artist)
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func albumResultsSection(_ albums: [AlbumID3]) -> some View {
-        if !albums.isEmpty {
-            Section("Albums") {
-                ForEach(albums) { album in
-                    NavigationLink(value: album) {
-                        AlbumRow(
-                            albumId: album.id,
-                            name: album.name,
-                            artist: album.artist,
-                            year: album.year,
-                            coverArtId: album.coverArt
-                        )
                     }
                 }
             }
@@ -369,29 +349,11 @@ struct SearchView: View {
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         }
 
-        private var albums: [AlbumID3] {
-            let named = tracks.filter { (matches($0.album) || matches($0.artist)) && $0.albumId != nil }
-            return Dictionary(grouping: named, by: { $0.albumId! })
-                .map { albumId, tracks in
-                    // No year: downloads never persist one.
-                    AlbumID3(
-                        id: albumId,
-                        name: tracks[0].album ?? albumId,
-                        songCount: tracks.count,
-                        duration: tracks.reduce(0) { $0 + ($1.durationSeconds ?? 0) },
-                        artist: tracks[0].artist,
-                        artistId: tracks.compactMap(\.artistId).first,
-                        coverArt: tracks.compactMap(\.coverArtId).first
-                    )
-                }
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        }
-
         var body: some View {
             let songs = matchingTracks
                 .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
                 .map { DisplayableSong(from: $0) }
-            if songs.isEmpty && artists.isEmpty && albums.isEmpty {
+            if songs.isEmpty && artists.isEmpty {
                 EmptyStateView(
                     systemImage: "wifi.slash",
                     title: "No Downloaded Matches",
@@ -403,21 +365,6 @@ struct SearchView: View {
                     Section("Artists") {
                         ForEach(artists) { artist in
                             NavigationLink(value: artist) { ArtistRow(artist: artist) }
-                        }
-                    }
-                }
-                if !albums.isEmpty {
-                    Section("Albums") {
-                        ForEach(albums) { album in
-                            NavigationLink(value: album) {
-                                AlbumRow(
-                                    albumId: album.id,
-                                    name: album.name,
-                                    artist: album.artist,
-                                    year: nil,
-                                    coverArtId: album.coverArt
-                                )
-                            }
                         }
                     }
                 }
