@@ -33,11 +33,15 @@ struct RootView: View {
         }
         .task(id: container?.serverState.activeServer?.id) {
             guard let container else { return }
-            // Idempotent app-lifetime observer. It reads the active server dynamically, so a
+            // Idempotent app-lifetime observers. They read the active state dynamically, so a
             // server switch only needs this task to make sure startup has happened.
             EarlySkipTracker.shared.start(
                 playerState: container.playerState,
                 serverState: container.serverState
+            )
+            DefaultShuffleTracker.shared.start(
+                playerState: container.playerState,
+                playerService: container.playerService
             )
         }
     }
