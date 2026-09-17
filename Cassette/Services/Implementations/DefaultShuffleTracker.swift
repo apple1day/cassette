@@ -60,17 +60,16 @@ final class DefaultShuffleTracker {
                     lastQueueIds = queueIds
                 }
 
-                if let pendingQueueIds,
+                if let candidateQueueIds = pendingQueueIds,
                    playbackState == .playing,
-                   queueIds == pendingQueueIds,
+                   queueIds == candidateQueueIds,
                    currentTrackId != nil {
-                    if !playerState.isLiveStream && !playerState.isSmartShuffleActive {
-                        if playerState.playbackMode != .shuffle {
-                            await playerService.setPlaybackMode(.shuffle)
-                            Logger.player.debug("[DEFAULT-SHUFFLE] Enabled Shuffle for newly-started queue")
-                        }
+                    if !playerState.isLiveStream && !playerState.isSmartShuffleActive,
+                       playerState.playbackMode != .shuffle {
+                        await playerService.setPlaybackMode(.shuffle)
+                        Logger.player.debug("[DEFAULT-SHUFFLE] Enabled Shuffle for newly-started queue")
                     }
-                    selfPendingQueueClear(&pendingQueueIds)
+                    pendingQueueIds = nil
                 }
 
                 previousTrackId = currentTrackId
@@ -78,11 +77,4 @@ final class DefaultShuffleTracker {
             }
         }
     }
-}
-
-/// Small helper keeps the optional mutation explicit and avoids accidentally shadowing the local
-/// `pendingQueueIds` binding inside the observer's `if let` block.
-@MainActor
-private func selfPendingQueueClear(_ value: inout [String]?) {
-    value = nil
 }
