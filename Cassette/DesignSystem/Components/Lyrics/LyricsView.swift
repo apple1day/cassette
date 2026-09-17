@@ -158,6 +158,25 @@ struct LyricsView: View {
 
             Spacer()
 
+            // Force a re-fetch from the server. The lyrics cache has a long TTL, so
+            // without this the player would keep showing stale words after Navidrome
+            // scanned an updated `.lrc` sidecar. See LyricsViewModel.refresh().
+            Button {
+                Task { await viewModel.refresh() }
+            } label: {
+                if viewModel.isRefreshing {
+                    ProgressView()
+                        .font(.title3)
+                        .foregroundStyle(foregroundColor.opacity(0.8))
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.title3)
+                        .foregroundStyle(foregroundColor.opacity(0.8))
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.isRefreshing)
+
             Button {
                 viewModel.autoScrollEnabled.toggle()
             } label: {

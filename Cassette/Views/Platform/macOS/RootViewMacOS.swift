@@ -91,9 +91,6 @@ struct RootViewMacOS: View {
         .onReceive(NotificationCenter.default.publisher(for: .cassetteOpenFullPlayerLyrics)) { _ in
             withAnimation { isShowingFullPlayer = true }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .cassetteSelectAlbums)) { _ in
-            selection = .section(.albums)
-        }
         .onReceive(NotificationCenter.default.publisher(for: .cassetteNavigateToAlbum)) { note in
             guard let id   = note.userInfo?["albumId"]   as? String,
                   let name = note.userInfo?["albumName"]  as? String else { return }
@@ -144,7 +141,6 @@ struct RootViewMacOS: View {
             }
 
             Section("Library") {
-                sidebarRow(.albums)
                 sidebarRow(.artists)
                 sidebarRow(.songs)
                 sidebarRow(.playlists)
@@ -304,7 +300,6 @@ struct RootViewMacOS: View {
         case .radio:         RadioListView()
         case .freshReleases: FreshReleasesSidebarView()
         case .wrapped:       WrappedView()
-        case .albums:    AlbumsListView()
         case .artists:   ArtistsListMacOS()
         case .songs:     SongsListView()
         case .playlists: PlaylistListView()

@@ -24,6 +24,9 @@ final class LyricsViewModel {
     var selectedLanguage: String?
     var autoScrollEnabled: Bool = true
     private(set) var isUserScrolling: Bool = false
+    /// True while a manual refresh (see ``refresh()``) is in flight. Exposed so the
+    /// lyrics header can show a spinner instead of flashing back to the loading state.
+    private(set) var isRefreshing: Bool = false
 
     private var lyricsList: LyricsList?
     private var trackingTimer: Timer?
@@ -88,6 +91,35 @@ final class LyricsViewModel {
     func retry() async {
         await lyricsService.invalidate(songId: songId, serverId: serverId)
         await load()
+    }
+
+    /// Force a re-fetch from the server, bypassing the cache TTL, without losing the
+    /// lyrics currently on screen.
+    ///
+    /// This is the answer to "the app won't show lyrics the server just updated": the
+    /// cache keeps serving the previous result until its TTL expires (synced lyrics
+    /// live for 7 days), so after Navidrome scans a new or edited `.lrc` sidecar the
+    /// player silently shows stale words. Invalidating first makes the next fetch go
+    /// to the network. Unlike ``retry()`` this does not reset the view to `.loading`,
+    /// so the existing lines stay visible (with a spinner in the header) until the
+    /// fresh set arrives — or, on failure, they simply remain.
+    func refresh() async {
+        isRefreshing = true
+        defer { isRefreshing = false }
+        await lyricsService.invalidate(songId: songId, serverId: serverId)
+        do {
+            let list = try await lyricsService.fetchLyrics(
+                forSongId: songId,
+                serverId: serverId,
+                title: title,
+                artist: artist
+            )
+            lyricsList = list
+            applyCurrentLanguage()
+        } catch {
+            // Keep showing whatever we had. Empty/error states already surface a retry
+            // control, and the user can pull this refresh again.
+        }
     }
 
     // MARK: - Line tracking

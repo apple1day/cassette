@@ -24,6 +24,7 @@ final class AlbumDetailViewModel {
     var downloadingIds: Set<String> = []
 
     private var loadedAlbum: AlbumID3?
+    private var cancelBatchDownloadRequested = false
     private let albumId: String
     private let libraryService: any LibraryServiceProtocol
     private let downloadService: any DownloadServiceProtocol
@@ -54,7 +55,7 @@ final class AlbumDetailViewModel {
             await loadFromLocal()
         }
         isLoading = false
-        isDownloadingAlbum = await downloadService.isDownloadingAlbum(albumId)
+        await refreshDownloadActivity()
     }
 
     private func loadFromAPI() async {
@@ -75,7 +76,9 @@ final class AlbumDetailViewModel {
             songCount = apiAlbum.songCount
             coverArtId = apiAlbum.coverArt
             artistId = apiAlbum.artistId
-            songs = (apiAlbum.song ?? []).map { DisplayableSong(from: $0, isDownloaded: downloadedIds.contains($0.id)) }
+            songs = (apiAlbum.song ?? []).map {
+                DisplayableSong(from: $0, isDownloaded: downloadedIds.contains($0.id))
+            }
             isOffline = false
         } catch {
             // Server unreachable (airplane mode with stale isOnline, VPN-satisfied path,
@@ -107,20 +110,29 @@ final class AlbumDetailViewModel {
         return true
     }
 
+    /// "Download album" is now only a batch action over songs. It intentionally does NOT call
+    /// DownloadService.download(album:), because that legacy path persists a DownloadedAlbum record.
+    /// The permanent offline model exposed by the app is one DownloadedTrack per song.
     func downloadAlbum() async {
-        guard let album = loadedAlbum, let serverId = serverState.activeServer?.id else { return }
-        isDownloadingAlbum = true
-        try? await downloadService.download(album: album, serverId: serverId)
-        let downloadedIds = await downloadService.downloadedSongIds(serverId: serverId)
-        songs = songs.map { $0.withDownloaded(downloadedIds.contains($0.id)) }
-        isDownloadingAlbum = false
+        guard let allSongs = loadedAlbum?.song,
+              let serverId = serverState.activeServer?.id else { return }
+        let downloaded = await downloadService.downloadedSongIds(serverId: serverId)
+        let missing = allSongs.filter { !downloaded.contains($0.id) }
+        guard !missing.isEmpty else {
+            syncDownloadedState(downloaded)
+            return
+        }
+        await downloadSongs(missing, serverId: serverId)
     }
 
     func cancelAlbumDownload() async {
         guard let serverId = serverState.activeServer?.id else { return }
-        for song in songs {
-            await downloadService.cancelDownload(songId: song.id, serverId: serverId)
+        cancelBatchDownloadRequested = true
+        let ids = downloadingIds
+        for id in ids {
+            await downloadService.cancelDownload(songId: id, serverId: serverId)
         }
+        downloadingIds.subtract(ids)
         isDownloadingAlbum = false
     }
 
@@ -129,7 +141,11 @@ final class AlbumDetailViewModel {
               let serverId = serverState.activeServer?.id else { return }
         downloadingIds.insert(id)
         defer { downloadingIds.remove(id) }
-        try? await downloadService.download(song: song, serverId: serverId)
+        do {
+            try await downloadService.download(song: song, serverId: serverId)
+        } catch {
+            toastService.showError("歌曲下载失败")
+        }
         let allDownloaded = await downloadService.downloadedSongIds(serverId: serverId)
         if let idx = songs.firstIndex(where: { $0.id == id }) {
             songs[idx] = songs[idx].withDownloaded(allDownloaded.contains(id))
@@ -137,24 +153,84 @@ final class AlbumDetailViewModel {
     }
 
     func downloadMissingTracks() async {
-        guard let album = loadedAlbum,
-              let serverId = serverState.activeServer?.id,
-              let allSongs = album.song else { return }
-        let downloadedIds = Set(songs.filter { $0.isDownloaded }.map(\.id))
-        let missing = allSongs.filter { !downloadedIds.contains($0.id) }
-        guard !missing.isEmpty else { return }
-        isDownloadingAlbum = true
-        for song in missing {
-            try? await downloadService.download(song: song, serverId: serverId)
-        }
-        let allDownloaded = await downloadService.downloadedSongIds(serverId: serverId)
-        songs = songs.map { $0.withDownloaded(allDownloaded.contains($0.id)) }
-        isDownloadingAlbum = false
+        await downloadAlbum()
     }
 
+    /// Batch-removes all local songs belonging to this album. The album is only a convenient online
+    /// grouping here; the offline library itself remains song-based.
     func deleteDownload() async {
         guard let serverId = serverState.activeServer?.id else { return }
+        for song in songs where song.isDownloaded {
+            try? await downloadService.remove(songId: song.id, serverId: serverId)
+        }
+        // Delete any pre-song-only legacy collection record after the tracks are gone. This call is
+        // idempotent and has no files left to remove in the normal path.
         try? await downloadService.remove(albumId: albumId, serverId: serverId)
-        songs = songs.map { $0.withDownloaded(false) }
+        let downloaded = await downloadService.downloadedSongIds(serverId: serverId)
+        syncDownloadedState(downloaded)
+    }
+
+    private func downloadSongs(_ items: [Song], serverId: UUID) async {
+        cancelBatchDownloadRequested = false
+        isDownloadingAlbum = true
+        let ids = Set(items.map(\.id))
+        downloadingIds.formUnion(ids)
+
+        var failedCount = 0
+        var attemptedCount = 0
+        for song in items {
+            if cancelBatchDownloadRequested || Task.isCancelled { break }
+            attemptedCount += 1
+            do {
+                try await downloadService.download(song: song, serverId: serverId)
+            } catch is CancellationError {
+                break
+            } catch {
+                failedCount += 1
+            }
+            downloadingIds.remove(song.id)
+        }
+
+        downloadingIds.subtract(ids)
+        isDownloadingAlbum = false
+        let wasCancelled = cancelBatchDownloadRequested || Task.isCancelled
+        cancelBatchDownloadRequested = false
+
+        let downloaded = await downloadService.downloadedSongIds(serverId: serverId)
+        syncDownloadedState(downloaded)
+        guard !wasCancelled else { return }
+
+        let completedCount = items.filter { downloaded.contains($0.id) }.count
+        if failedCount == 0 && completedCount == items.count {
+            toastService.showSuccess("已下载 \(completedCount) 首歌曲")
+        } else if completedCount > 0 {
+            let incomplete = max(0, attemptedCount - completedCount)
+            toastService.showError("已下载 \(completedCount) 首，\(incomplete) 首未完成")
+        } else if attemptedCount > 0 {
+            toastService.showError("歌曲下载失败")
+        }
+    }
+
+    private func syncDownloadedState(_ downloadedIds: Set<String>) {
+        songs = songs.map { $0.withDownloaded(downloadedIds.contains($0.id)) }
+    }
+
+    private func refreshDownloadActivity() async {
+        guard let serverId = serverState.activeServer?.id else {
+            isDownloadingAlbum = false
+            return
+        }
+        // Keep recognizing an in-flight legacy album download, then check the new song-only batch path.
+        if await downloadService.isDownloadingAlbum(albumId) {
+            isDownloadingAlbum = true
+            return
+        }
+        for song in songs {
+            if await downloadService.isDownloading(songId: song.id, serverId: serverId) {
+                isDownloadingAlbum = true
+                return
+            }
+        }
+        isDownloadingAlbum = false
     }
 }
