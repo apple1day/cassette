@@ -20,7 +20,7 @@ final class PlayerState {
     var position: TimeInterval = 0
     var duration: TimeInterval = 0
     var repeatMode: RepeatMode = .off
-    var isShuffled: Bool = false
+    var isShuffled: Bool = true
 
     /// Unified three-state playback mode (List / Single / Shuffle) derived from `repeatMode`
     /// + `isShuffled`. The UI reads this for a single cycling toggle; changes go through
