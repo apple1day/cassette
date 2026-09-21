@@ -85,18 +85,21 @@ struct MainTabView: View {
             Tab("歌曲", systemImage: "music.note", value: AppTab.home) {
                 NavigationStack(path: $homePath) {
                     HomeView()
+                        .cassetteSigningInset()
                 }
             }
 
             Tab("离线", systemImage: "arrow.down.circle.fill", value: AppTab.offline) {
                 NavigationStack {
                     DownloadedView()
+                        .cassetteSigningInset()
                 }
             }
 
             Tab("我的", systemImage: "person.fill", value: AppTab.discover) {
                 NavigationStack {
                     SettingsView()
+                        .cassetteSigningInset(alwaysVisible: true)
                 }
             }
 

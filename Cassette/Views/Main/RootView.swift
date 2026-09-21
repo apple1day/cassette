@@ -31,6 +31,7 @@ struct RootView: View {
                 }
             }
         }
+        .cassetteSigningLifecycle()
         .task(id: container?.serverState.activeServer?.id) {
             guard let container else { return }
             // Idempotent app-lifetime observer. It reads the active server dynamically, so a
