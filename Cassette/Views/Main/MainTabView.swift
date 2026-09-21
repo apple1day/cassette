@@ -85,12 +85,18 @@ struct MainTabView: View {
             Tab("歌曲", systemImage: "music.note", value: AppTab.home) {
                 NavigationStack(path: $homePath) {
                     HomeView()
+                        #if os(iOS)
+                        .safeAreaInset(edge: .top, spacing: 0) { SigningExpiryBanner() }
+                        #endif
                 }
             }
 
             Tab("离线", systemImage: "arrow.down.circle.fill", value: AppTab.offline) {
                 NavigationStack {
                     DownloadedView()
+                        #if os(iOS)
+                        .safeAreaInset(edge: .top, spacing: 0) { SigningExpiryBanner() }
+                        #endif
                 }
             }
 

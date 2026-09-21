@@ -1,0 +1,61 @@
+name: Signing expiry checks
+on:
+  pull_request:
+    paths:
+      - 'Cassette/**'
+      - 'CassetteTests/SigningExpiryTests.swift'
+      - 'Cassette.xcodeproj/**'
+      - 'scripts/check-signing.sh'
+      - '.github/workflows/signing-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signing:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26 for the existing project and default actor isolation
+        run: |
+          python3 - <<'PY'
+          import glob, pathlib, re, subprocess
+          apps = sorted(glob.glob('/Applications/Xcode_26*.app'),
+                        key=lambda p: tuple(map(int, re.findall(r'\d+', pathlib.Path(p).name))),
+                        reverse=True)
+          if not apps:
+              raise SystemExit('Xcode 26 is required; no matching installation on this runner.')
+          subprocess.run(['sudo', 'xcode-select', '--switch', apps[0] + '/Contents/Developer'], check=True)
+          PY
+          xcodebuild -version
+          swift --version
+      - name: Run isolated signing tests with Cassette concurrency settings
+        run: |
+          set -o pipefail
+          bash scripts/check-signing.sh 2>&1 | tee signing-tests.log
+      - name: Compile iOS Simulator app without signing
+        run: |
+          set -o pipefail
+          xcodebuild -project Cassette.xcodeproj -scheme Cassette \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/cassette-signing-ios" \
+            CODE_SIGNING_ALLOWED=NO build > signing-ios-build.log 2>&1 \
+            || { tail -n 160 signing-ios-build.log; exit 1; }
+          tail -n 30 signing-ios-build.log
+      - name: Compile macOS app without enabling the iOS feature
+        run: |
+          xcodebuild -project Cassette.xcodeproj -scheme Cassette \
+            -configuration Debug -destination 'generic/platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/cassette-signing-macos" \
+            CODE_SIGNING_ALLOWED=NO build > signing-macos-build.log 2>&1 \
+            || { tail -n 160 signing-macos-build.log; exit 1; }
+          tail -n 30 signing-macos-build.log
+      - name: Save validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cassette-signing-checks
+          path: |
+            signing-tests.log
+            signing-ios-build.log
+            signing-macos-build.log

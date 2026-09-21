@@ -9,6 +9,10 @@ struct RootView: View {
     @Environment(\.appContainer) private var container
     @AppStorage("onboardingComplete") private var onboardingComplete = false
 
+    #if os(iOS)
+    @StateObject private var signing = SigningStatusModel()
+    #endif
+
     var body: some View {
         Group {
             if let serverState = container?.serverState {
@@ -31,6 +35,10 @@ struct RootView: View {
                 }
             }
         }
+        #if os(iOS)
+        .background { SigningLifecycleView() }
+        .environmentObject(signing)
+        #endif
         .task(id: container?.serverState.activeServer?.id) {
             guard let container else { return }
             // Idempotent app-lifetime observer. It reads the active server dynamically, so a

@@ -36,6 +36,9 @@ struct SettingsView: View {
 
     private func form(downloadsVM: DownloadsViewModel) -> some View {
         Form {
+            #if os(iOS)
+            SigningStatusSection()
+            #endif
             DownloadsSectionView(vm: downloadsVM)
             CacheSectionView()
             ReplayGainSettingsSection()
