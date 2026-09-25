@@ -674,12 +674,6 @@ struct FullPlayerView: View {
             Text("Up Next")
                 .font(.cassetteSectionTitle)
                 .foregroundStyle(vm.contentColor)
-            if let album = playerState.currentTrack?.albumName, !album.isEmpty {
-                Text(album)
-                    .font(.cassetteCaption)
-                    .foregroundStyle(vm.secondaryContentColor)
-                    .lineLimit(1)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -803,7 +797,6 @@ private struct TrackInfoSection: View {
     @Query private var favoriteMatches: [FavoriteRecord]
     @Environment(ArtworkImageCache.self) private var artworkImageCache
     @State private var songToAddToPlaylist: DisplayableSong?
-    @State private var showAlbumSheet = false
 
     init(playerState: PlayerState, container: AppContainer?, contentColor: Color, secondaryContentColor: Color, compact: Bool = false) {
         self.playerState = playerState
@@ -899,11 +892,6 @@ private struct TrackInfoSection: View {
 
                 Menu {
                     if !playerState.isLiveStream {
-                        Button("Go to Album", systemImage: "square.stack") {
-                            guard playerState.currentTrack?.albumId != nil else { return }
-                            showAlbumSheet = true
-                        }
-                        .disabled(playerState.currentTrack?.albumId == nil || !isOnline)
                         Button("Go to Artist", systemImage: "music.mic") {
                             goToArtist()
                         }
@@ -934,19 +922,6 @@ private struct TrackInfoSection: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("More options")
-            }
-        }
-        .sheet(isPresented: $showAlbumSheet) {
-            if let track = playerState.currentTrack,
-               let albumId = track.albumId,
-               let albumName = track.albumName {
-                #if os(macOS)
-                AlbumDetailMacOS(albumId: albumId, albumName: albumName, coverArtId: track.coverArtId)
-                #else
-                NavigationStack {
-                    AlbumDetailView(albumId: albumId, albumName: albumName, coverArtId: track.coverArtId)
-                }
-                #endif
             }
         }
         .sheet(item: $songToAddToPlaylist) { song in

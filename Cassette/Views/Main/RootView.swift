@@ -10,24 +10,35 @@ struct RootView: View {
     @AppStorage("onboardingComplete") private var onboardingComplete = false
 
     var body: some View {
-        if let serverState = container?.serverState {
-            if serverState.isLoadingPersistedState {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if serverState.activeServer != nil && onboardingComplete {
-                #if os(macOS)
-                RootViewMacOS()
-                    .accentColor(.cassetteAccent)
-                #else
-                MainTabView()
-                    .accentColor(.cassetteAccent)
-                    // Cassette on iPhone is intentionally a music-first, low-glare player.
-                    // Keep the song list, offline state and floating player on one dark surface.
-                    .preferredColorScheme(.dark)
-                #endif
-            } else {
-                OnboardingView()
+        Group {
+            if let serverState = container?.serverState {
+                if serverState.isLoadingPersistedState {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if serverState.activeServer != nil && onboardingComplete {
+                    #if os(macOS)
+                    RootViewMacOS()
+                        .accentColor(.cassetteAccent)
+                    #else
+                    MainTabView()
+                        .accentColor(.cassetteAccent)
+                        // Cassette on iPhone is intentionally a music-first, low-glare player.
+                        // Keep the song list, offline state and floating player on one dark surface.
+                        .preferredColorScheme(.dark)
+                    #endif
+                } else {
+                    OnboardingView()
+                }
             }
+        }
+        .task(id: container?.serverState.activeServer?.id) {
+            guard let container else { return }
+            // Idempotent app-lifetime observer. It reads the active server dynamically, so a
+            // server switch only needs this task to make sure startup has happened.
+            EarlySkipTracker.shared.start(
+                playerState: container.playerState,
+                serverState: container.serverState
+            )
         }
     }
 }

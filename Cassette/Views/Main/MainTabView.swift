@@ -35,7 +35,7 @@ struct MainTabView: View {
                     }
                 }
                 .fullScreenCover(isPresented: $showingFullPlayer) {
-                    FullPlayerView()
+                    VinylPlayerView()
                         .cassetteZoomTransition(sourceID: fullPlayerZoomID, in: playerZoom)
                 }
         } else {
@@ -65,7 +65,7 @@ struct MainTabView: View {
                     }
                 }
                 .fullScreenCover(isPresented: $showingFullPlayer) {
-                    FullPlayerView()
+                    VinylPlayerView()
                         .cassetteZoomTransition(sourceID: fullPlayerZoomID, in: playerZoom)
                 }
         }

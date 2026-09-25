@@ -324,6 +324,7 @@ struct CacheSectionView: View {
 struct DownloadsSectionView: View {
     @Environment(\.appContainer) private var container
     let vm: DownloadsViewModel
+    @State private var showClearAllConfirmation = false
 
     private var cacheSettings: CacheSettings? { container?.cacheSettings }
 
@@ -358,100 +359,78 @@ struct DownloadsSectionView: View {
                 .pickerStyle(.menu)
             }
 
-            if !vm.displayAlbums.isEmpty {
+            if !vm.downloadedSongs.isEmpty {
                 DisclosureGroup {
-                    ForEach(vm.displayAlbums) { album in
+                    ForEach(vm.downloadedSongs) { song in
                         HStack(spacing: CassetteSpacing.m) {
-                            CoverArtCard(id: album.coverArtId ?? album.albumId, size: 40)
+                            CoverArtCard(id: song.coverArtId ?? song.songId, size: 40)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(album.name)
+                                Text(song.title)
                                     .font(.subheadline)
                                     .lineLimit(1)
-                                if let total = album.totalTracksCount {
-                                    Text("\(album.downloadedTracksCount)/\(total) tracks")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    Text("\(album.downloadedTracksCount) tracks")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                HStack(spacing: CassetteSpacing.xs) {
+                                    Text(song.artist ?? "未知歌手")
+                                        .lineLimit(1)
+                                    Text("·")
+                                    Text(ByteCountFormatter.string(fromByteCount: song.fileSize, countStyle: .file))
                                 }
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                             }
                             Spacer()
                             Button(role: .destructive) {
-                                Task { await vm.removeAlbum(album) }
+                                Task { await vm.removeSong(song) }
                             } label: {
                                 Image(systemName: "trash")
                                     .foregroundStyle(.red)
                             }
                             .buttonStyle(.borderless)
+                            .accessibilityLabel("删除 \(song.title)")
                         }
                     }
                 } label: {
                     Label {
-                        Text("Albums (\(vm.displayAlbums.count))")
+                        Text("本地歌曲 (\(vm.downloadedSongs.count))")
                     } icon: {
-                        SettingsIcon(systemImage: "music.note.list", color: Color.cassetteAccent)
+                        SettingsIcon(systemImage: "music.note", color: Color.cassetteAccent)
                     }
                 }
-            }
-
-            if !vm.downloadedPlaylists.isEmpty {
-                DisclosureGroup {
-                    ForEach(vm.downloadedPlaylists) { playlist in
-                        HStack(spacing: CassetteSpacing.m) {
-                            CoverArtCard(id: playlist.playlistId, size: 40)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(playlist.name)
-                                    .font(.subheadline)
-                                    .lineLimit(1)
-                                Text("\(playlist.tracksCount)/\(playlist.totalTracksCount) tracks")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Button(role: .destructive) {
-                                Task { await vm.removePlaylist(playlist) }
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(.red)
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                    }
-                } label: {
-                    Label {
-                        Text("Playlists (\(vm.downloadedPlaylists.count))")
-                    } icon: {
-                        SettingsIcon(systemImage: "list.bullet", color: .indigo)
-                    }
-                }
-            }
-
-            if vm.displayAlbums.isEmpty && vm.downloadedPlaylists.isEmpty {
-                Text("No downloaded content.")
+            } else {
+                Text("暂无本地歌曲。")
                     .foregroundStyle(.secondary)
                     .font(.footnote)
             }
 
             Button(role: .destructive) {
-                Task { await vm.clearAll() }
+                showClearAllConfirmation = true
             } label: {
                 if vm.isClearingAll {
                     HStack(spacing: CassetteSpacing.s) {
                         ProgressView().scaleEffect(0.8)
-                        Text("Clearing…")
+                        Text("正在删除…")
                     }
                 } else {
-                    Label("Clear all downloads", systemImage: "trash.fill")
+                    Label("删除全部本地歌曲", systemImage: "trash.fill")
                 }
             }
-            .disabled(vm.isClearingAll || (vm.displayAlbums.isEmpty && vm.downloadedPlaylists.isEmpty))
+            .disabled(vm.isClearingAll || vm.downloadedSongs.isEmpty)
 
         } header: {
             Text("Downloads")
         } footer: {
-            Text("Downloaded tracks are stored permanently and available offline. Format sets the quality new downloads are fetched at.")
+            Text("离线下载按歌曲保存。下载专辑只表示批量下载其中的歌曲，不会在本地创建专辑分组。")
+        }
+        .confirmationDialog(
+            "删除全部本地歌曲？",
+            isPresented: $showClearAllConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("删除全部", role: .destructive) {
+                Task { await vm.clearAll() }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("将删除当前音乐库中的全部 \(vm.downloadedSongs.count) 首本地歌曲，不会删除服务器上的音乐。")
         }
     }
 }

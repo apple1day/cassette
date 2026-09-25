@@ -115,9 +115,10 @@ final class AppContainer {
 
         let player = PlayerService(state: playerState, mediaResolver: resolver, serverService: server, sessionService: sessionService, artworkImageCache: artworkImageCache, libraryService: library, audioStreamCache: cache, downloadService: download, cacheSettings: cacheSettings, replayGainSettings: replayGainSettings, crossfadeSettings: crossfadeSettings, toastService: toastService, statsService: stats, listenBrainzService: lb)
         _player = player
-        playerService = player
+        let defaultShufflePlayer = DefaultShufflePlayerService(base: player)
+        playerService = defaultShufflePlayer
 
-        let nowPlaying = NowPlayingService(playerService: player, artworkImageCache: artworkImageCache)
+        let nowPlaying = NowPlayingService(playerService: defaultShufflePlayer, artworkImageCache: artworkImageCache)
         nowPlayingService = nowPlaying
         nowPlayingLyricsCoordinator = NowPlayingLyricsCoordinator(
             playerState: playerState,

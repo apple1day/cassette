@@ -1,0 +1,2066 @@
+{
+  "total_audio": 294,
+  "matched_lrc": 234,
+  "unmatched_count": 60,
+  "user_original_lrc": 1,
+  "results": [
+    {
+      "file": "01 惊叹号.mp3",
+      "artist": "周杰伦",
+      "title": "跨时代",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "03 Mine Mine .mp3",
+      "artist": "周杰伦",
+      "title": "MINE MINE",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "03 烟花易冷.mp3",
+      "artist": "周杰伦",
+      "title": "雨下一整晚",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "09 爱的飞行日记.mp3",
+      "artist": "周杰伦",
+      "title": "爱的飞行日记",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "10 自导自演 .mp3",
+      "artist": "周杰伦",
+      "title": "自导自演",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "10.安静.mp3",
+      "artist": "周杰伦",
+      "title": "安静",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "11 超人不会飞.mp3",
+      "artist": "周杰伦",
+      "title": "超人不会飞",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "439d5ef4d0b319a580447f860b1f7a08.mp3",
+      "artist": "一颗狼星&糯米Nomi&倪浩毅&指尖笑&草帽酱&执素兮&平生不晚&浅影阿",
+      "title": "古风2026 (节奏版)",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "Because_of_You-Kelly_Clarkson-Breakaway.mp3",
+      "artist": "Kelly Clarkson",
+      "title": "Because of You",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Beyond-不再犹豫.flac",
+      "artist": "Beyond",
+      "title": "不再犹豫",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Beyond-光辉岁月.flac",
+      "artist": "Beyond",
+      "title": "光辉岁月",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Beyond-真的爱你.flac",
+      "artist": "Beyond",
+      "title": "真的爱你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Carpenters-Yesterday Once More.flac",
+      "artist": "Carpenters",
+      "title": "Yesterday Once More",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Catch_My_Breath-Kelly_Clarkson-Just_The_Hits.mp3",
+      "artist": "Kelly Clarkson",
+      "title": "Catch My Breath",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Diamonds-Rihanna-Diamonds.mp3",
+      "artist": "Rihanna",
+      "title": "Diamonds",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "F.I.R.飞儿乐团-月牙湾.flac",
+      "artist": "F.I.R.飞儿乐团",
+      "title": "月牙湾",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "I_Do-911-I_Do.mp3",
+      "artist": "911",
+      "title": "I Do",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Love_Story-Taylor_Swift-Fearless.mp3",
+      "artist": "Taylor Swift",
+      "title": "Love Story",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Lydia-F.I.R.-飞儿乐团.mp3",
+      "artist": "F.I.R.",
+      "title": "Lydia",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Maria Cordero-友谊之光.flac",
+      "artist": "Maria Cordero",
+      "title": "友谊之光",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Nothing_s_Gonna_Change_My_Love_for_You_汽水波波子_超好听的宝藏女声翻唱173.mp3",
+      "artist": "汽水波波子",
+      "title": "Nothing's Gonna Change My Love for You",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "QQ爱-孙辉 蓝若兮-QQ爱.mp3",
+      "artist": "孙辉&蓝若兮",
+      "title": "QQ爱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Save_Your_Tears-The_Weeknd-HQ.flac",
+      "artist": "Save Your Tears",
+      "title": "The Weeknd",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Soler-风的季节.flac",
+      "artist": "Soler",
+      "title": "风的季节",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "Stronger_What_Doesn_t_Kill_You_Kelly_Clarkson_Stronger_Deluxe.mp3",
+      "artist": "Kelly Clarkson",
+      "title": "Stronger (What Doesn't Kill You)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "file.mp3",
+      "artist": "半糖记",
+      "title": "阿衣莫 (青岛大学毕业live完整版)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "shao_shuai___ni_shi_ren_jian_si_yue_tian_cf56cc45.mp3",
+      "artist": "shao",
+      "title": "shuai",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "거짓말-BIGBANG-Always.mp3",
+      "artist": "BIGBANG",
+      "title": "거짓말",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "삐딱하게_(Crooked)-G-DRAGON-쿠데타_(COUP_D ETAT).mp3",
+      "artist": "G-DRAGON",
+      "title": "삐딱하게 (Crooked)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "そばにいるね-青山テルマ SoulJa-そばにいるね.mp3",
+      "artist": "青山テルマ&SoulJa",
+      "title": "そばにいるね",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "ブルーバード-いきものがかり-ブルーバード.mp3",
+      "artist": "いきものがかり",
+      "title": "ブルーバード",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "一路向北-赵乃吉.mp3",
+      "artist": "赵乃吉",
+      "title": "一路向北",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "一路生花-温奕心-一路生花.mp3",
+      "artist": "温奕心",
+      "title": "一路生花",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "不够成熟-By2-16未成年.mp3",
+      "artist": "By2",
+      "title": "不够成熟",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "不将就-李荣浩-有理想.mp3",
+      "artist": "李荣浩",
+      "title": "不将就",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "不痛-张韶涵-梦里花.mp3",
+      "artist": "张韶涵",
+      "title": "不痛",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "不能说的秘密-Montagem 周杰伦 -慢慢.mp3",
+      "artist": "Montagem&周杰伦、",
+      "title": "不能说的秘密",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "中国话-S.H.E-Play.mp3",
+      "artist": "S.H.E",
+      "title": "中国话",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "五四特别版错位时空_共青团中央_五四特别版错位时空.mp3",
+      "artist": "共青团中央",
+      "title": "五四特别版错位时空",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "亲爱的你啊-任素汐-亲爱的你啊.mp3",
+      "artist": "任素汐",
+      "title": "亲爱的你啊",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "亲爱的小孩-任素汐-亲爱的小孩_电视剧原声带.mp3",
+      "artist": "任素汐",
+      "title": "亲爱的小孩",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "人间有时-希林娜依高-珠帘玉幕_影视原声带.mp3",
+      "artist": "希林娜依高",
+      "title": "人间有时",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "从此以后-黄伊宁-HQ.flac",
+      "artist": "从此以后",
+      "title": "黄伊宁",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "他不懂-张杰-听 我们的歌.mp3",
+      "artist": "张杰",
+      "title": "他不懂",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "以后的以后-庄心妍-庄心妍情歌精选集.mp3",
+      "artist": "庄心妍",
+      "title": "以后的以后",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "任贤齐-还有我.flac",
+      "artist": "任贤齐",
+      "title": "还有我",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "伍佰 And China Blue-挪威的森林.flac",
+      "artist": "伍佰 And China Blue",
+      "title": "挪威的森林",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "传奇-王菲-传奇.mp3",
+      "artist": "王菲",
+      "title": "传奇",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "伤心太平洋-任贤齐-爱像太平洋.mp3",
+      "artist": "任贤齐",
+      "title": "伤心太平洋",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "伯虎说_feat_唐伯虎Annie_伯爵Johnny_唐伯虎Annie_伯虎说_feat_唐伯虎Annie.mp3",
+      "artist": "伯爵Johnny&唐伯虎Annie",
+      "title": "伯虎说 (feat.唐伯虎Annie)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "作曲家-李荣浩-HQ.flac",
+      "artist": "作曲家",
+      "title": "李荣浩",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "你怎么说-邓丽君-天国的情人.mp3",
+      "artist": "邓丽君",
+      "title": "你怎么说",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "你的微笑-F.I.R.飞儿乐团-飞儿乐团.mp3",
+      "artist": "F.I.R.飞儿乐团",
+      "title": "你的微笑",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "你的酒馆对我打了烊-陈雪凝.flac",
+      "artist": "陈雪凝",
+      "title": "你的酒馆对我打了烊",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "你还要我怎样-薛之谦.mp3",
+      "artist": "薛之谦",
+      "title": "你还要我怎样",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "倒数-G.E.M.邓紫棋-HQ.flac",
+      "artist": "倒数",
+      "title": "G.E.M.邓紫棋",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "借我-谢春花-算云烟.mp3",
+      "artist": "谢春花",
+      "title": "借我",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "像我这样的人-毛不易.mp3",
+      "artist": "毛不易",
+      "title": "像我这样的人",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "光良-童话.flac",
+      "artist": "光良",
+      "title": "童话",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "关不上的窗-周传雄-关不上的窗.mp3",
+      "artist": "周传雄",
+      "title": "关不上的窗",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "再见只是陌生人-庄心妍-放过自己.mp3",
+      "artist": "庄心妍",
+      "title": "再见只是陌生人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "冬天的秘密-周传雄-恋人创世纪.mp3",
+      "artist": "周传雄",
+      "title": "冬天的秘密",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "冷雨夜-BEYOND-Beyond_The_Stage.mp3",
+      "artist": "BEYOND",
+      "title": "冷雨夜",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "出山-花粥 王胜娚-粥请客 四.mp3",
+      "artist": "花粥&王胜娚",
+      "title": "出山",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "刀郎-手心里的温柔.flac",
+      "artist": "刀郎",
+      "title": "手心里的温柔",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "刀郎-西海情歌.flac",
+      "artist": "刀郎",
+      "title": "西海情歌",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "刘德华-一起走过的日子.flac",
+      "artist": "刘德华",
+      "title": "一起走过的日子",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "刘德华-来生缘.flac",
+      "artist": "刘德华",
+      "title": "来生缘",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "刘若英-原来你也在这里.flac",
+      "artist": "刘若英",
+      "title": "原来你也在这里",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "刘若英-后来.flac",
+      "artist": "刘若英",
+      "title": "后来",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "初恋-回春丹-初恋.mp3",
+      "artist": "回春丹",
+      "title": "初恋",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "初恋情人_刘小慧_一天四十八小时刘小慧新曲精选.mp3",
+      "artist": "刘小慧",
+      "title": "初恋情人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "别说我的眼泪你无所谓-东来东往-回到我身边.mp3",
+      "artist": "东来东往",
+      "title": "别说我的眼泪你无所谓",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "别错过-程佳佳-别错过.mp3",
+      "artist": "程佳佳",
+      "title": "别错过",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "到不了-范玮琪-范范的世界.mp3",
+      "artist": "范玮琪",
+      "title": "到不了",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "千年之恋-F.I.R.-无限.mp3",
+      "artist": "F.I.R.",
+      "title": "千年之恋",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "千百惠-走过咖啡屋.flac",
+      "artist": "千百惠",
+      "title": "走过咖啡屋",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "千纸鹤-邰正宵-千纸鹤.mp3",
+      "artist": "邰正宵",
+      "title": "千纸鹤",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "半壶纱-刘珂矣.flac",
+      "artist": "刘珂矣",
+      "title": "半壶纱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "半点心-草蜢-Grasshopper_Ⅳ.mp3",
+      "artist": "草蜢",
+      "title": "半点心",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "卓玛-乌兰托娅-陪你一起看草原.mp3",
+      "artist": "乌兰托娅",
+      "title": "卓玛",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "南山南-马頔-孤岛.mp3",
+      "artist": "马頔",
+      "title": "南山南",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "南方姑娘-赵雷-赵小雷.mp3",
+      "artist": "赵雷",
+      "title": "南方姑娘",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "去远方-付俊乐-HQ.flac",
+      "artist": "去远方",
+      "title": "付俊乐",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "可不可以不勇敢-范玮琪-真善美.mp3",
+      "artist": "范玮琪",
+      "title": "可不可以不勇敢",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "向云端-小霞 海洋Bo-向云端.mp3",
+      "artist": "小霞&海洋Bo",
+      "title": "向云端",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "吕方-朋友别哭.flac",
+      "artist": "吕方",
+      "title": "朋友别哭",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "听海-张惠妹-BAD_BOY.mp3",
+      "artist": "张惠妹",
+      "title": "听海",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "告白气球.mp3",
+      "artist": "周杰伦",
+      "title": "告白气球",
+      "has_lrc": true,
+      "user_original": true
+    },
+    {
+      "file": "周传雄-青花.flac",
+      "artist": "周传雄",
+      "title": "青花",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周传雄-黄昏.flac",
+      "artist": "周传雄",
+      "title": "黄昏",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周华健-花心.flac",
+      "artist": "周华健",
+      "title": "花心",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周慧敏-最爱.flac",
+      "artist": "周慧敏",
+      "title": "最爱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 半岛铁盒.mp3",
+      "artist": "周杰伦",
+      "title": "半岛铁盒",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 回到过去.mp3",
+      "artist": "周杰伦",
+      "title": "回到过去",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 威廉古堡.mp3",
+      "artist": "周杰伦",
+      "title": "威廉古堡",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 安静.mp3",
+      "artist": "周杰伦",
+      "title": "安静",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 开不了口.mp3",
+      "artist": "周杰伦",
+      "title": "开不了口",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 暗号.mp3",
+      "artist": "周杰伦",
+      "title": "暗号",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 最后的战役.mp3",
+      "artist": "周杰伦-八度空间",
+      "title": "最后的战役",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 爱在西元前.mp3",
+      "artist": "周杰伦",
+      "title": "爱在西元前",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 爷爷泡的茶.mp3",
+      "artist": "周杰伦",
+      "title": "爷爷泡的茶",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦 - 简单爱.mp3",
+      "artist": "周杰伦",
+      "title": "简单爱",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦-七里香.flac",
+      "artist": "周杰伦",
+      "title": "七里香",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦-发如雪.flac",
+      "artist": "周杰伦",
+      "title": "发如雪",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦-断了的弦.flac",
+      "artist": "周杰伦",
+      "title": "断了的弦",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦-晴天.flac",
+      "artist": "周杰伦",
+      "title": "晴天",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦-稻香.flac",
+      "artist": "周杰伦",
+      "title": "稻香",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰伦-青花瓷.flac",
+      "artist": "周杰伦",
+      "title": "青花瓷",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰倫 - 斷了的弦.mp3",
+      "artist": "周杰倫",
+      "title": "斷了的弦",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "周杰倫 - 軌跡.mp3",
+      "artist": "周杰倫",
+      "title": "軌跡",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "呼吸决定-Fine乐团-HQ.flac",
+      "artist": "呼吸决定",
+      "title": "Fine乐团",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "哥_只是个传说-陈旭-哥_只是个传说.mp3",
+      "artist": "陈旭",
+      "title": "哥 只是个传说",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "唯一-G.E.M.邓紫棋-T.I.M.E.mp3",
+      "artist": "G.E.M.邓紫棋",
+      "title": "唯一",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "喜帖街-谢安琪-Binary.mp3",
+      "artist": "谢安琪",
+      "title": "喜帖街",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "喜欢-张悬-亲爱的...我还不知道.mp3",
+      "artist": "张悬",
+      "title": "喜欢",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "喜欢-阿肆.flac",
+      "artist": "阿肆",
+      "title": "喜欢",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "喜欢你_BEYOND_正东_10_X_10_我至爱唱片_BEYOND_秘密警察.mp3",
+      "artist": "BEYOND",
+      "title": "喜欢你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "回到过去-周杰伦-八度空间.mp3",
+      "artist": "周杰伦",
+      "title": "回到过去",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "外婆的澎湖湾-卓依婷-校园民谣.mp3",
+      "artist": "卓依婷",
+      "title": "外婆的澎湖湾",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "天路-李娜.mp3",
+      "artist": "李娜",
+      "title": "天路",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "奢香夫人-凤凰传奇-最炫民族风.mp3",
+      "artist": "凤凰传奇",
+      "title": "奢香夫人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "孙燕姿-遇见.flac",
+      "artist": "孙燕姿",
+      "title": "遇见",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "孙耀威-爱的故事上集.flac",
+      "artist": "孙耀威",
+      "title": "爱的故事上集",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "孙露-再度重相逢.flac",
+      "artist": "孙露",
+      "title": "再度重相逢",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "孙露-最后一次.flac",
+      "artist": "孙露",
+      "title": "最后一次",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "孙露-离别的秋天.flac",
+      "artist": "孙露",
+      "title": "离别的秋天",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "孟庭苇-风中有朵雨做的云.flac",
+      "artist": "孟庭苇",
+      "title": "风中有朵雨做的云",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "孤独的总和氛围女声_苏晚星_孤独的总和氛围女声.mp3",
+      "artist": "苏晚星",
+      "title": "孤独的总和(氛围女声)",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "容易受伤的女人-王菲-阿菲正传.mp3",
+      "artist": "王菲",
+      "title": "容易受伤的女人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "寂寞沙洲冷-周传雄-星空下的传说.mp3",
+      "artist": "周传雄",
+      "title": "寂寞沙洲冷",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "屋顶_周杰伦_温岚_吴宗宪_男女情歌对唱冠军全记录.mp3",
+      "artist": "周杰伦&温岚&吴宗宪",
+      "title": "屋顶",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "岁岁-任素汐-岁岁.mp3",
+      "artist": "任素汐",
+      "title": "岁岁",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "布拉格广场-蔡依林 周杰伦-看我72变.mp3",
+      "artist": "蔡依林&周杰伦",
+      "title": "布拉格广场",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "广东爱情故事-广东雨神-广东爱情故事.mp3",
+      "artist": "广东雨神",
+      "title": "广东爱情故事",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "广岛之恋-莫文蔚 张洪量-做自己.mp3",
+      "artist": "莫文蔚&张洪量",
+      "title": "广岛之恋",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "开始懂了-孙燕姿.mp3",
+      "artist": "孙燕姿",
+      "title": "开始懂了",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张国荣-倩女幽魂.flac",
+      "artist": "张国荣",
+      "title": "倩女幽魂",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张学友-一路上有你.flac",
+      "artist": "张学友",
+      "title": "一路上有你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张学友-吻别.flac",
+      "artist": "张学友",
+      "title": "吻别",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张学友-如果这都不算爱.flac",
+      "artist": "张学友",
+      "title": "如果这都不算爱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张学友-等你等到我心痛.flac",
+      "artist": "张学友",
+      "title": "等你等到我心痛",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张学友-饿狼传说.flac",
+      "artist": "张学友",
+      "title": "饿狼传说",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张宇-曲终人散.flac",
+      "artist": "张宇",
+      "title": "曲终人散",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张宇-月亮惹的祸.flac",
+      "artist": "张宇",
+      "title": "月亮惹的祸",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张宇-雨一直下.flac",
+      "artist": "张宇",
+      "title": "雨一直下",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张敬轩-断点.flac",
+      "artist": "张敬轩",
+      "title": "断点",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "张芸京-偏爱.flac",
+      "artist": "张芸京",
+      "title": "偏爱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张雨生-大海.flac",
+      "artist": "张雨生",
+      "title": "大海",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张震岳-再见.flac",
+      "artist": "张震岳",
+      "title": "再见",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "张韶涵-欧若拉.flac",
+      "artist": "张韶涵",
+      "title": "欧若拉",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "张韶涵-隐形的翅膀.flac",
+      "artist": "张韶涵",
+      "title": "隐形的翅膀",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "归去来-胡兵 希莉娜依-红星六号.mp3",
+      "artist": "胡兵&希莉娜依",
+      "title": "归去来",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "归去来兮-花粥.mp3",
+      "artist": "花粥",
+      "title": "归去来兮",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "当时的月亮-王菲-HQ.flac",
+      "artist": "当时的月亮",
+      "title": "王菲",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "彭佳慧-相见恨晚.flac",
+      "artist": "彭佳慧",
+      "title": "相见恨晚",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "很爱很爱你_Live_刘若英_伍佰_China_Blue_快乐天堂_滚石30演唱会.mp3",
+      "artist": "刘若英&伍佰&China Blue",
+      "title": "很爱很爱你 (Live)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "徐誉滕-天使的翅膀.flac",
+      "artist": "徐誉滕",
+      "title": "天使的翅膀",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "徐誉滕-等一分钟.mp3",
+      "artist": "徐誉滕",
+      "title": "等一分钟",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "心墙-林俊杰.flac",
+      "artist": "林俊杰",
+      "title": "心墙",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "思念及时雨-洋澜一-思念及时雨.mp3",
+      "artist": "洋澜一",
+      "title": "思念及时雨",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "悬溺-葛东琪-第二街区.mp3",
+      "artist": "葛东琪",
+      "title": "悬溺",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "情人-BEYOND-乐与怒.mp3",
+      "artist": "BEYOND",
+      "title": "情人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "情歌-梁静茹-HQ.flac",
+      "artist": "情歌",
+      "title": "梁静茹",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "慢慢-张学友-忘记你我做不到.mp3",
+      "artist": "张学友",
+      "title": "慢慢",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "慢慢喜欢你-莫文蔚-我们在中场相遇.mp3",
+      "artist": "莫文蔚",
+      "title": "慢慢喜欢你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "成都-赵雷-成都.mp3",
+      "artist": "赵雷",
+      "title": "成都",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我们俩-郭顶.mp3",
+      "artist": "郭顶",
+      "title": "我们俩",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我们的歌-王力宏-改变自己.mp3",
+      "artist": "王力宏",
+      "title": "我们的歌",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "我们的爱-F.I.R.-飞儿乐团.mp3",
+      "artist": "F.I.R.",
+      "title": "我们的爱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我们的纪念-李雅微-放羊的星星_电视原声带.mp3",
+      "artist": "李雅微",
+      "title": "我们的纪念",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我好像在哪见过你-薛之谦-初学者.mp3",
+      "artist": "薛之谦",
+      "title": "我好像在哪见过你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我怀念的-孙燕姿-逆光.mp3",
+      "artist": "孙燕姿",
+      "title": "我怀念的",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我怕来者不是你_毒药版_毒药_我怕来者不是你毒药版.mp3",
+      "artist": "毒药",
+      "title": "我怕来者不是你 (毒药版)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我的心太乱_周传雄_Dubbing_情歌教父周传雄1987_2003.mp3",
+      "artist": "周传雄",
+      "title": "我的心太乱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "我还年轻我还年轻 （无念白） - 张叶蕾.mp3",
+      "artist": "我还年轻我还年轻 （无念白）",
+      "title": "张叶蕾",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "护花使者-李克勤-雨中街头剧.mp3",
+      "artist": "李克勤",
+      "title": "护花使者",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "放生-范逸臣-再爱一次.mp3",
+      "artist": "范逸臣",
+      "title": "放生",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "故乡-许巍-那一年.mp3",
+      "artist": "许巍",
+      "title": "故乡",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "斑马 斑马-宋冬野-安和桥北.mp3",
+      "artist": "宋冬野",
+      "title": "斑马，斑马",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "无人之岛-任然-没有发生的爱情.mp3",
+      "artist": "任然",
+      "title": "无人之岛",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "无名的人-张韶涵- 雄狮少年2 电影音乐专辑.mp3",
+      "artist": "张韶涵",
+      "title": "无名的人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "春娇与志明-街道办GDC 欧阳耀莹-春娇与志明.mp3",
+      "artist": "街道办GDC&欧阳耀莹",
+      "title": "春娇与志明",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "春泥-庾澄庆-我...真的受伤了.mp3",
+      "artist": "庾澄庆",
+      "title": "春泥",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "春风十里_Live_房东的猫_音乐好朋友_音乐好朋友_第二季.mp3",
+      "artist": "房东的猫&音乐好朋友",
+      "title": "春风十里 (Live)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "月半小夜曲-陈慧娴-活出生命Ⅱ演唱会.mp3",
+      "artist": "陈慧娴",
+      "title": "月半小夜曲",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "月牙湾-F.I.R.-爱歌姬.mp3",
+      "artist": "F.I.R.",
+      "title": "月牙湾",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "月落的声音_傈僳语版_一颗狼星_月落的声音_傈僳语版.mp3",
+      "artist": "一颗狼星",
+      "title": "月落的声音 (傈僳语版)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "杀死那个石家庄人_万能青年旅店_万能青年旅店_同名专辑.mp3",
+      "artist": "万能青年旅店",
+      "title": "杀死那个石家庄人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李丽芬-爱江山更爱美人.flac",
+      "artist": "李丽芬",
+      "title": "爱江山更爱美人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李克勤-月半小夜曲.flac",
+      "artist": "李克勤",
+      "title": "月半小夜曲",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李宗盛-鬼迷心窍.flac",
+      "artist": "李宗盛",
+      "title": "鬼迷心窍",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李荣浩-少年.flac",
+      "artist": "李荣浩",
+      "title": "少年",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "李荣浩-年少有为.flac",
+      "artist": "李荣浩",
+      "title": "年少有为",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李荣浩-李白.flac",
+      "artist": "李荣浩",
+      "title": "李白",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李荣浩-模特.flac",
+      "artist": "李荣浩",
+      "title": "模特",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李荣浩-爸爸妈妈.flac",
+      "artist": "李荣浩",
+      "title": "爸爸妈妈",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李荣浩-老街.mp3",
+      "artist": "李荣浩",
+      "title": "老街",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "李荣浩-要我怎么办.flac",
+      "artist": "李荣浩",
+      "title": "要我怎么办",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "杨千嬅-野孩子.mp3",
+      "artist": "杨千嬅",
+      "title": "野孩子",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "林俊杰-曹操.flac",
+      "artist": "林俊杰",
+      "title": "曹操",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "毛不易-消愁.flac",
+      "artist": "毛不易",
+      "title": "消愁",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "毛不易-牧马城市-《老男孩》电视剧片尾曲.flac",
+      "artist": "毛不易",
+      "title": "牧马城市-《老男孩》电视剧片尾曲",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "永不失联的爱_正式版_单依纯_永不失联的爱_正式版.mp3",
+      "artist": "单依纯",
+      "title": "永不失联的爱 (正式版)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "江南-林俊杰.flac",
+      "artist": "林俊杰",
+      "title": "江南",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "汪峰-怒放的生命.flac",
+      "artist": "汪峰",
+      "title": "怒放的生命",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "泡沫-G.E.M.邓紫棋.mp3",
+      "artist": "G.E.M.邓紫棋",
+      "title": "泡沫",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "泡沫_(G.E.M.重生版)-G.E.M.邓紫棋-I_AM_GLORIA.mp3",
+      "artist": "G.E.M.邓紫棋",
+      "title": "泡沫 (G.E.M.重生版)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "活着-郝云-活着.mp3",
+      "artist": "郝云",
+      "title": "活着",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "浮白 - 花粥、王胜娚.mp3",
+      "artist": "花粥;王胜娚",
+      "title": "浮白",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "海阔天空-Beyond-华纳超极品音色系列.mp3",
+      "artist": "Beyond",
+      "title": "海阔天空",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "温柔-五月天-爱情万岁.mp3",
+      "artist": "五月天",
+      "title": "温柔",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "演员-薛之谦-绅士.mp3",
+      "artist": "薛之谦",
+      "title": "演员",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "灯下白-南野-Glass-21ce4f.mp3",
+      "artist": "南野",
+      "title": "灯下白",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "烟火-陈翔-My_Stage.mp3",
+      "artist": "陈翔",
+      "title": "烟火",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "烟雨画卷-黄龄-烟雨画卷.mp3",
+      "artist": "黄龄",
+      "title": "烟雨画卷",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "爱-小虎队-爱.mp3",
+      "artist": "小虎队",
+      "title": "爱",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "爱你-王心凌-爱你.mp3",
+      "artist": "王心凌",
+      "title": "爱你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "爱的暴风雨_(DJ_霄霄粤语版)-梦涵-爱的暴风雨.mp3",
+      "artist": "梦涵",
+      "title": "爱的暴风雨 (DJ 霄霄粤语版)",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "爱笑的眼睛-林俊杰-她说_概念自选辑.mp3",
+      "artist": "林俊杰",
+      "title": "爱笑的眼睛",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "牧马城市-毛不易-老男孩_电视剧原声带.mp3",
+      "artist": "毛不易",
+      "title": "牧马城市",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "王招君-任素汐-TA说.mp3",
+      "artist": "任素汐",
+      "title": "王招君",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "理想-赵雷-吉姆餐厅.mp3",
+      "artist": "赵雷",
+      "title": "理想",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "电台情歌-莫文蔚-做自己.mp3",
+      "artist": "莫文蔚",
+      "title": "电台情歌",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "画-赵雷-赵小雷.mp3",
+      "artist": "赵雷",
+      "title": "画",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "盛夏的果实-莫文蔚.flac",
+      "artist": "莫文蔚",
+      "title": "盛夏的果实",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "相思-毛阿敏-腔.调.mp3",
+      "artist": "毛阿敏",
+      "title": "相思",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "看得最远的地方-张韶涵-第5季.mp3",
+      "artist": "张韶涵",
+      "title": "看得最远的地方",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "真的爱妳-Beyond-宝丽金经典之经典.mp3",
+      "artist": "Beyond",
+      "title": "真的爱妳",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "知我 戏腔版 -陈桉瑾-知我-1fd61b.mp3",
+      "artist": "陈桉瑾",
+      "title": "知我（戏腔版）",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "知我_(齐静春)-谭渊-知我 齐静春.mp3",
+      "artist": "谭渊",
+      "title": "知我 (齐静春)",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "知我_抖音热搜版_无关风月_知我抖音热搜版_2a6099.mp3",
+      "artist": "无关风月",
+      "title": "知我 (抖音热搜版)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "知足-五月天-知足_最真杰作选.mp3",
+      "artist": "五月天",
+      "title": "知足",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "神山-神山索玛-神山-48755e.mp3",
+      "artist": "神山索玛",
+      "title": "神山",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "筷子兄弟-老男孩.flac",
+      "artist": "筷子兄弟",
+      "title": "老男孩",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "篇章-张韶涵 王赫野-篇章.mp3",
+      "artist": "张韶涵&王赫野",
+      "title": "篇章",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "类似爱情-萧亚轩-3面夏娃.mp3",
+      "artist": "萧亚轩",
+      "title": "类似爱情",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "红色高跟鞋-蔡健雅-若你碰到他.mp3",
+      "artist": "蔡健雅",
+      "title": "红色高跟鞋",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "红装-徐良 阿悄-犯贱.mp3",
+      "artist": "徐良&阿悄",
+      "title": "红装",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "红豆-王菲-唱游.mp3",
+      "artist": "王菲",
+      "title": "红豆",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "终于明白-动力火车-HQ.flac",
+      "artist": "终于明白",
+      "title": "动力火车",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "给我一首歌的时间-周杰伦-魔杰座.mp3",
+      "artist": "周杰伦",
+      "title": "给我一首歌的时间",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "罗刹海市-刀郎-山歌寥哉.mp3",
+      "artist": "刀郎",
+      "title": "罗刹海市",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "美人鱼_林俊杰.mp3",
+      "artist": "美人鱼",
+      "title": "林俊杰",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "胆小鬼-梁咏琪-最爱梁咏琪.mp3",
+      "artist": "梁咏琪",
+      "title": "胆小鬼",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "背对背拥抱-林俊杰-他是 JJ林俊杰.mp3",
+      "artist": "林俊杰",
+      "title": "背对背拥抱",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "胡广生-任素汐-胡广生.mp3",
+      "artist": "任素汐",
+      "title": "胡广生",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "至少还有你-林忆莲-林忆莲 s.mp3",
+      "artist": "林忆莲",
+      "title": "至少还有你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "舞女-韩宝仪-精选恰恰醉心集,_Vol._6.mp3",
+      "artist": "韩宝仪",
+      "title": "舞女",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "花海.mp3",
+      "artist": "",
+      "title": "花海",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "花火 - 梁咏琪.mp3",
+      "artist": "梁咏琪",
+      "title": "花火",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "萧亚轩-最熟悉的陌生人.flac",
+      "artist": "萧亚轩",
+      "title": "最熟悉的陌生人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "落了白-蒋雪儿Snow.J-落了白.mp3",
+      "artist": "蒋雪儿Snow.J",
+      "title": "落了白",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "董小姐-宋冬野-安和桥北.mp3",
+      "artist": "宋冬野",
+      "title": "董小姐",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "蓝色土耳其-周传雄-蓝色土耳其.mp3",
+      "artist": "周传雄",
+      "title": "蓝色土耳其",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "薛之谦-认真的雪.flac",
+      "artist": "薛之谦",
+      "title": "认真的雪",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "西楼儿女-岳云鹏-西楼儿女.mp3",
+      "artist": "岳云鹏",
+      "title": "西楼儿女",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "许嵩-断桥残雪.flac",
+      "artist": "许嵩",
+      "title": "断桥残雪",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "许巍-蓝莲花.flac",
+      "artist": "许巍",
+      "title": "蓝莲花",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "许茹芸-独角戏.flac",
+      "artist": "许茹芸",
+      "title": "独角戏",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "谭咏麟-再见亦是泪.flac",
+      "artist": "谭咏麟",
+      "title": "再见亦是泪",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "赤伶-HITA-赤伶.mp3",
+      "artist": "HITA",
+      "title": "赤伶",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "辞九门回忆-邓寓君(等什么君)-辞九门回忆.mp3",
+      "artist": "邓寓君(等什么君)",
+      "title": "辞九门回忆",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "这世界那么多人 - 莫文蔚.flac",
+      "artist": "莫文蔚",
+      "title": "这世界那么多人",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "远山少年-窝窝-远山少年.mp3",
+      "artist": "窝窝",
+      "title": "远山少年",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "迪克牛仔-有多少爱可以重来.flac",
+      "artist": "迪克牛仔",
+      "title": "有多少爱可以重来",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "邓丽君-漫步人生路.flac",
+      "artist": "邓丽君",
+      "title": "漫步人生路",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "郑智化-水手.flac",
+      "artist": "郑智化",
+      "title": "水手",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "酒梦-童欣.mp3",
+      "artist": "童欣",
+      "title": "酒梦",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "错位时空_(原版)-艾晨-错位时空(原版).mp3",
+      "artist": "艾晨",
+      "title": "错位时空 (原版)",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "镜中渊-周林枫 如風-镜中渊.mp3",
+      "artist": "周林枫&如風",
+      "title": "镜中渊",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "阿刁_(Live)-张韶涵-歌手2018_第2期.mp3",
+      "artist": "张韶涵",
+      "title": "阿刁 (Live)",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "阿杜-撕夜.flac",
+      "artist": "阿杜",
+      "title": "撕夜",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "阿珍爱上了阿强-五条人.flac",
+      "artist": "五条人",
+      "title": "阿珍爱上了阿强",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陈奕迅-单车.flac",
+      "artist": "陈奕迅",
+      "title": "单车",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "陈奕迅-好久不见.flac",
+      "artist": "陈奕迅",
+      "title": "好久不见",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陈奕迅-富士山下.flac",
+      "artist": "陈奕迅",
+      "title": "富士山下",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陈奕迅-浮夸.flac",
+      "artist": "陈奕迅",
+      "title": "浮夸",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陈小春-独家记忆.flac",
+      "artist": "陈小春",
+      "title": "独家记忆",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陈慧娴-人生何处不相逢.flac",
+      "artist": "陈慧娴",
+      "title": "人生何处不相逢",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陈慧娴-千千阙歌.flac",
+      "artist": "陈慧娴",
+      "title": "千千阙歌",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陈百强-偏偏喜欢你.flac",
+      "artist": "陈百强",
+      "title": "偏偏喜欢你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "陶喆-就是爱你.flac",
+      "artist": "陶喆",
+      "title": "就是爱你",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "难念的经_周华健.mp3",
+      "artist": "周华健",
+      "title": "难念的经",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "雨爱-杨丞琳-雨爱(缤纷庆功版).mp3",
+      "artist": "杨丞琳",
+      "title": "雨爱",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "雨蝶-李翊君-经典再回首.mp3",
+      "artist": "李翊君",
+      "title": "雨蝶",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "需要人陪-王力宏-十八般武艺.mp3",
+      "artist": "王力宏",
+      "title": "需要人陪",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "青藏高原-李娜-青藏高原.mp3",
+      "artist": "李娜",
+      "title": "青藏高原",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "韩宝仪-粉红色的回忆.flac",
+      "artist": "韩宝仪",
+      "title": "粉红色的回忆",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "飞鸟和蝉-任然-飞鸟和蝉.mp3",
+      "artist": "任然",
+      "title": "飞鸟和蝉",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "鸳鸯戏-邓寓君(等什么君)-鸳鸯戏.mp3",
+      "artist": "邓寓君(等什么君)",
+      "title": "鸳鸯戏",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "黄义达-那女孩对我说.flac",
+      "artist": "黄义达",
+      "title": "那女孩对我说",
+      "has_lrc": true,
+      "user_original": false
+    },
+    {
+      "file": "鼓楼-赵雷.flac",
+      "artist": "鼓楼",
+      "title": "赵雷",
+      "has_lrc": false,
+      "user_original": false
+    },
+    {
+      "file": "龙卷风_Live_G_E_M_邓紫棋_我是歌手第二季_第9期.mp3",
+      "artist": "G.E.M. 邓紫棋",
+      "title": "龙卷风 (Live)",
+      "has_lrc": true,
+      "user_original": false
+    }
+  ]
+}

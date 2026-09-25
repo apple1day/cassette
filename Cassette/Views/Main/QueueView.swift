@@ -235,10 +235,6 @@ private struct QueueRow: View {
 
     var body: some View {
         HStack(spacing: CassetteSpacing.m) {
-            CoverArtView(id: song.coverArtId ?? song.id, size: 88, loadingEnabled: loadArtwork)
-                .frame(width: 44, height: 44)
-                .cassetteCoverStyle(cornerRadius: CassetteCornerRadius.xs)
-
             VStack(alignment: .leading, spacing: CassetteSpacing.xs) {
                 Text(song.title)
                     .font(.cassetteCellTitle)
