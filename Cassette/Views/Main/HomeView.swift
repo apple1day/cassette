@@ -11,15 +11,8 @@ struct HomeView: View {
     @Environment(\.appContainer) private var container
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PinnedItem.sortOrder) private var allPinnedItems: [PinnedItem]
-    @Query private var recentDownloadedAlbums: [DownloadedAlbum]
     @Query private var recentDownloadedPlaylists: [DownloadedPlaylist]
     init() {
-        var albumDescriptor = FetchDescriptor<DownloadedAlbum>(
-            sortBy: [SortDescriptor(\DownloadedAlbum.downloadedAt, order: .reverse)]
-        )
-        albumDescriptor.fetchLimit = 24
-        _recentDownloadedAlbums = Query(albumDescriptor)
-
         var playlistDescriptor = FetchDescriptor<DownloadedPlaylist>(
             sortBy: [SortDescriptor(\DownloadedPlaylist.downloadedAt, order: .reverse)]
         )
@@ -35,7 +28,6 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel?
     @State private var showCreatePlaylist = false
     @State private var navigateToSettings = false
-    @State private var navigateToAllAlbums = false
     // Local mutable copy for smooth drag-to-reorder; synced from @Query on count changes.
     @State private var localPinnedItems: [PinnedItem] = []
     @State private var dropTargetId: String?
@@ -51,17 +43,6 @@ struct HomeView: View {
     private var isOnline: Bool { container?.serverState.isOnline == true }
 
     private var recentDownloadedItems: [DownloadedItem] {
-        let albumItems = recentDownloadedAlbums.map {
-            DownloadedItem(
-                id: "album:\($0.albumId)",
-                itemId: $0.albumId,
-                type: .album,
-                name: $0.name,
-                subtitle: $0.artist ?? "",
-                coverArtId: $0.coverArtId,
-                downloadedAt: $0.downloadedAt
-            )
-        }
         let playlistItems = recentDownloadedPlaylists.map {
             DownloadedItem(
                 id: "playlist:\($0.playlistId)",
@@ -73,15 +54,16 @@ struct HomeView: View {
                 downloadedAt: $0.downloadedAt
             )
         }
-        return (albumItems + playlistItems)
+        return playlistItems
             .sorted { $0.downloadedAt > $1.downloadedAt }
             .prefix(24)
             .map { $0 }
     }
 
     private var visiblePinnedItems: [PinnedItem] {
-        guard container?.serverState.isOnline != true else { return localPinnedItems }
-        return localPinnedItems.filter { isAvailableOffline($0) }
+        let nonAlbum = localPinnedItems.filter { PinnedItemType(rawValue: $0.itemType) != .album }
+        guard container?.serverState.isOnline != true else { return nonAlbum }
+        return nonAlbum.filter { isAvailableOffline($0) }
     }
 
     private func isAvailableOffline(_ item: PinnedItem) -> Bool {
@@ -103,53 +85,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
-                #if os(iOS)
-                if !visiblePinnedItems.isEmpty {
-                    pinnedSection
-                }
-                #endif
-                #if os(iOS)
-                librarySection
-                #endif
-                #if os(macOS)
-                macOSCarousels
-                #else
-                recentlySection
-                #endif
-            }
-            .padding(.horizontal, CassetteSpacing.l)
-            .padding(.top, CassetteSpacing.m)
-            .padding(.bottom, CassetteSpacing.xl)
-        }
-        .miniPlayerBottomMargin()
-        .navigationTitle("Home")
-        .toolbar {
-            #if !os(macOS)
-            ToolbarItem(placement: .automatic) {
-                Menu {
-                    Button { showCreatePlaylist = true } label: {
-                        Label("New Playlist", systemImage: "plus")
-                    }
-                    .disabled(!isOnline)
-                    Button { navigateToSettings = true } label: {
-                        Label("Settings", systemImage: "gear")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.title3)
-                        .frame(width: 36, height: 36)
-                }
-                .buttonStyle(.plain)
-            }
-            #endif
-        }
-        .sheet(isPresented: $showCreatePlaylist) { CreatePlaylistSheet { _ in } }
-        .navigationDestination(isPresented: $navigateToSettings) { SettingsView() }
-        #if os(macOS)
-        .navigationDestination(isPresented: $navigateToAllAlbums) { AlbumsListView() }
-        #endif
+        SongsListView()
         #if os(iOS)
         .navigationDestination(for: HomeDestination.self) { destination in
             switch destination {
@@ -233,57 +169,6 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 32) {
             if isOnline {
                 smartShuffleCard
-            }
-            if let vm = viewModel {
-                if vm.isLoading && vm.recentAlbums.isEmpty && vm.recentlyPlayed.isEmpty && vm.mostPlayed.isEmpty {
-                    ProgressView("Loading your library...")
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 60)
-                } else if let error = vm.error, vm.recentAlbums.isEmpty {
-                    EmptyStateView(
-                        systemImage: "exclamationmark.triangle",
-                        title: "Unable to Load",
-                        subtitle: LocalizedStringKey(error.displayMessage),
-                        action: .init(label: "Retry") { Task { await vm.load() } }
-                    )
-                } else if !vm.isLoading && vm.recentAlbums.isEmpty && vm.recentlyPlayed.isEmpty && vm.mostPlayed.isEmpty {
-                    EmptyStateView(
-                        systemImage: "music.note.list",
-                        title: "No music yet",
-                        subtitle: "Add some music to your server to get started"
-                    )
-                } else {
-                    VStack(alignment: .leading, spacing: 32) {
-                        if !vm.recentAlbums.isEmpty {
-                            CarouselSection(title: "Recently Added", onSeeAll: {
-                                #if os(macOS)
-                                NotificationCenter.default.post(name: .cassetteSelectAlbums, object: nil)
-                                #else
-                                navigateToAllAlbums = true
-                                #endif
-                            }) {
-                                ForEach(vm.recentAlbums) { album in
-                                    CarouselAlbumCard(album: album)
-                                }
-                            }
-                        }
-                        if !vm.recentlyPlayed.isEmpty {
-                            CarouselSection(title: "Recently Played") {
-                                ForEach(vm.recentlyPlayed) { album in
-                                    CarouselAlbumCard(album: album)
-                                }
-                            }
-                        }
-                        if !vm.mostPlayed.isEmpty {
-                            CarouselSection(title: "Most Played") {
-                                ForEach(vm.mostPlayed) { album in
-                                    CarouselAlbumCard(album: album)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
             }
         }
     }
@@ -369,36 +254,31 @@ struct HomeView: View {
 
     private var librarySection: some View {
         VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-            Text("Library")
+            Text("我的音乐")
                 .font(.cassetteSectionTitle)
             VStack(spacing: 0) {
-                NavigationLink(value: HomeDestination.libraryPlaylists) {
-                    HomeLibraryRowLabel(title: "Playlists", systemImage: "music.note.list")
+                NavigationLink(value: HomeDestination.librarySongs) {
+                    HomeLibraryRowLabel(title: "歌曲", systemImage: "music.note")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
-                NavigationLink(value: HomeDestination.libraryAlbums) {
-                    HomeLibraryRowLabel(title: "Albums", systemImage: "square.stack")
+                NavigationLink(value: HomeDestination.libraryPlaylists) {
+                    HomeLibraryRowLabel(title: "歌单", systemImage: "music.note.list")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryArtists) {
-                    HomeLibraryRowLabel(title: "Artists", systemImage: "music.mic")
-                }
-                .buttonStyle(.plain)
-                Divider().padding(.leading, 52)
-                NavigationLink(value: HomeDestination.librarySongs) {
-                    HomeLibraryRowLabel(title: "Songs", systemImage: "music.note")
+                    HomeLibraryRowLabel(title: "歌手", systemImage: "music.mic")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryFavorites) {
-                    HomeLibraryRowLabel(title: "Favorites", systemImage: "star.fill")
+                    HomeLibraryRowLabel(title: "收藏", systemImage: "star.fill")
                 }
                 .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: HomeDestination.libraryDownloads) {
-                    HomeLibraryRowLabel(title: "Downloads", systemImage: "arrow.down.circle.fill")
+                    HomeLibraryRowLabel(title: "已下载", systemImage: "arrow.down.circle.fill")
                 }
                 .buttonStyle(.plain)
             }
@@ -409,45 +289,22 @@ struct HomeView: View {
 
     @ViewBuilder
     private var recentlySection: some View {
-        if isOnline {
-            if let vm = viewModel, !vm.recentAlbums.isEmpty || vm.isLoading {
-                VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-                    Text("Recently Added")
-                        .font(.cassetteSectionTitle)
-                    if vm.isLoading && vm.recentAlbums.isEmpty {
-                        LazyVGrid(columns: recentColumns, spacing: CassetteSpacing.m) {
-                            ForEach(0..<6, id: \.self) { _ in SkeletonAlbumCard() }
-                        }
-                    } else {
-                        LazyVGrid(columns: recentColumns, spacing: CassetteSpacing.m) {
-                            ForEach(vm.recentAlbums) { album in
-                                NavigationLink(value: HomeDestination.album(album)) {
-                                    HomeAlbumCell(album: album, namespace: recentlyAddedZoomNamespace)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-                Text("Recently Downloaded")
-                    .font(.cassetteSectionTitle)
-                if recentDownloadedItems.isEmpty {
-                    EmptyStateView(
-                        systemImage: "arrow.down.circle",
-                        title: "No downloads yet",
-                        subtitle: "Albums and playlists you download will appear here"
-                    )
-                } else {
-                    LazyVGrid(columns: recentColumns, spacing: CassetteSpacing.m) {
-                        ForEach(recentDownloadedItems) { item in
-                            let dest: HomeDestination = item.type == .album
-                                ? .albumById(id: item.itemId, name: item.name, subtitle: item.subtitle, coverArtId: item.coverArtId)
-                                : .playlistById(id: item.itemId, name: item.name, coverArtId: item.coverArtId)
-                            HomeDownloadedItemCard(item: item, destination: dest)
-                        }
+        VStack(alignment: .leading, spacing: CassetteSpacing.s) {
+            Text("Recently Downloaded")
+                .font(.cassetteSectionTitle)
+            if recentDownloadedItems.isEmpty {
+                EmptyStateView(
+                    systemImage: "arrow.down.circle",
+                    title: "No downloads yet",
+                    subtitle: "Playlists you download will appear here"
+                )
+            } else {
+                LazyVGrid(columns: recentColumns, spacing: CassetteSpacing.m) {
+                    ForEach(recentDownloadedItems) { item in
+                        let dest: HomeDestination = item.type == .album
+                            ? .albumById(id: item.itemId, name: item.name, subtitle: item.subtitle, coverArtId: item.coverArtId)
+                            : .playlistById(id: item.itemId, name: item.name, coverArtId: item.coverArtId)
+                        HomeDownloadedItemCard(item: item, destination: dest)
                     }
                 }
             }

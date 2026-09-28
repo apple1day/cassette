@@ -28,6 +28,7 @@ final class AppContainer {
     let mediaResolver: any MediaResolverProtocol
     let playerService: any PlayerServiceProtocol
     let nowPlayingService: any NowPlayingServiceProtocol
+    let nowPlayingLyricsCoordinator: NowPlayingLyricsCoordinator
     let favoritesService: any FavoritesServiceProtocol
     let pinService: any PinServiceProtocol
     let playlistService: any PlaylistServiceProtocol
@@ -114,10 +115,17 @@ final class AppContainer {
 
         let player = PlayerService(state: playerState, mediaResolver: resolver, serverService: server, sessionService: sessionService, artworkImageCache: artworkImageCache, libraryService: library, audioStreamCache: cache, downloadService: download, cacheSettings: cacheSettings, replayGainSettings: replayGainSettings, crossfadeSettings: crossfadeSettings, toastService: toastService, statsService: stats, listenBrainzService: lb)
         _player = player
-        playerService = player
+        let defaultShufflePlayer = DefaultShufflePlayerService(base: player)
+        playerService = defaultShufflePlayer
 
-        let nowPlaying = NowPlayingService(playerService: player, artworkImageCache: artworkImageCache)
+        let nowPlaying = NowPlayingService(playerService: defaultShufflePlayer, artworkImageCache: artworkImageCache)
         nowPlayingService = nowPlaying
+        nowPlayingLyricsCoordinator = NowPlayingLyricsCoordinator(
+            playerState: playerState,
+            serverState: serverState,
+            lyricsService: lyricsService,
+            nowPlayingService: nowPlaying
+        )
 
         favoritesService = FavoritesService(libraryService: library, serverState: serverState, modelContainer: modelContainer)
         let pin = PinService(modelContainer: modelContainer)
@@ -161,6 +169,7 @@ final class AppContainer {
         await _player.setWidgetSyncService(widgetSyncService)
         await _player.setReplayGainService(replayGainService)
         await _player.crossfadeSettingsDidChange()
+        nowPlayingLyricsCoordinator.start()
     }
 }
 

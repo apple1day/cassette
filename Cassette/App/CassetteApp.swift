@@ -176,7 +176,8 @@ struct CassetteApp: App {
                 currentPosition: c.playerState.position,
                 queue: c.playerState.queue,
                 currentTrack: c.playerState.currentTrack,
-                repeatMode: c.playerState.repeatMode
+                repeatMode: c.playerState.repeatMode,
+                playbackMode: c.playerState.playbackMode
             )
             Task { await c.sessionService.save(playerState: snapshot) }
             Logger.session.info("App backgrounded — session flushed")

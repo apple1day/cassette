@@ -25,6 +25,7 @@ final class MockPlayerService: PlayerServiceProtocol {
     func seek(to position: TimeInterval) async { seekCalledWith = position }
     func setRepeatMode(_ mode: RepeatMode) async {}
     func toggleShuffle() async {}
+    func setPlaybackMode(_ mode: PlaybackMode) async {}
     func appendToQueue(_ tracks: [DisplayableSong]) async {}
     func playNext(_ song: DisplayableSong) async {}
     func playNext(_ songs: [DisplayableSong]) async {}
@@ -52,7 +53,9 @@ final class MockPlayerService: PlayerServiceProtocol {
 private func makeViewModel(
     songId: String = "song-1",
     serverId: UUID = UUID(),
-    lyrics: LyricsList? = nil
+    lyrics: LyricsList? = nil,
+    playerPosition: TimeInterval = 0,
+    playbackState: PlaybackState = .idle
 ) throws -> (LyricsViewModel, MockPlayerService) {
     let container = try ModelContainer(
         for: Schema([CachedLyrics.self]),
@@ -70,6 +73,8 @@ private func makeViewModel(
     let service = LyricsService(serverService: serverService, modelContainer: container)
     let playerService = MockPlayerService()
     let playerState = PlayerState()
+    playerState.position = playerPosition
+    playerState.playbackState = playbackState
 
     let vm = LyricsViewModel(
         songId: songId,
@@ -134,33 +139,94 @@ struct LyricsViewModelUpdateTests {
     }
 
     @Test func appliesNegativeOffset() async throws {
-        // offset = -500 means lines shift 500ms later
+        // offset = -500 means lines appear 500ms later.
         let id = UUID()
         let (vm, _) = try makeViewModel(serverId: id, lyrics: syncedList(offset: -500))
         await vm.load()
 
-        // adjustedMs = 400 - (-500) = 900 → still line 0 (line 1 starts at 1000)
-        vm.update(elapsedMs: 400)
+        // adjustedMs = 1_400 + (-500) = 900 → still line 0.
+        vm.update(elapsedMs: 1_400)
         #expect(vm.currentLineIndex == 0)
 
-        // adjustedMs = 600 - (-500) = 1100 → line 1
-        vm.update(elapsedMs: 600)
+        // adjustedMs = 1_600 + (-500) = 1_100 → line 1.
+        vm.update(elapsedMs: 1_600)
         #expect(vm.currentLineIndex == 1)
     }
 
     @Test func appliesPositiveOffset() async throws {
-        // offset = 500 means lines shift 500ms earlier
+        // offset = 500 means lines appear 500ms earlier.
         let id = UUID()
         let (vm, _) = try makeViewModel(serverId: id, lyrics: syncedList(offset: 500))
         await vm.load()
 
-        // adjustedMs = 1200 - 500 = 700 → line 0 (line 1 starts at 1000)
-        vm.update(elapsedMs: 1200)
+        // adjustedMs = 400 + 500 = 900 → still line 0.
+        vm.update(elapsedMs: 400)
         #expect(vm.currentLineIndex == 0)
 
-        // adjustedMs = 1600 - 500 = 1100 → line 1
-        vm.update(elapsedMs: 1600)
+        // adjustedMs = 600 + 500 = 1_100 → line 1.
+        vm.update(elapsedMs: 600)
         #expect(vm.currentLineIndex == 1)
+    }
+
+    @Test func openingWhilePausedSamplesCurrentPosition() async throws {
+        let id = UUID()
+        let (vm, _) = try makeViewModel(
+            serverId: id,
+            lyrics: syncedList(),
+            playerPosition: 1.5,
+            playbackState: .paused
+        )
+        await vm.load()
+
+        vm.setVisible(true)
+
+        #expect(vm.currentLineIndex == 1)
+    }
+
+    /// Line lookup is a binary search; long tracks must stay exact at the boundaries.
+    @Test func picksCorrectLineIndexInLongTrack() async throws {
+        let lines = (0..<500).map { Line(value: "Line \($0)", start: $0 * 1000) }
+        let list = LyricsList(structuredLyrics: [
+            StructuredLyrics(lang: "en", synced: true, line: lines)
+        ])
+        let id = UUID()
+        let (vm, _) = try makeViewModel(serverId: id, lyrics: list)
+        await vm.load()
+
+        vm.update(elapsedMs: 0)
+        #expect(vm.currentLineIndex == 0)
+
+        vm.update(elapsedMs: 250_500)
+        #expect(vm.currentLineIndex == 250)
+
+        vm.update(elapsedMs: 499_000)
+        #expect(vm.currentLineIndex == 499)
+
+        // Before the first line there is nothing to highlight.
+        vm.update(elapsedMs: -1)
+        #expect(vm.currentLineIndex == nil)
+    }
+
+    /// A synced set containing an untimed line must fall back to the linear walk
+    /// rather than bisect past it and skip the right line.
+    @Test func handlesUntimedLineMixedIntoSyncedSet() async throws {
+        let list = LyricsList(structuredLyrics: [
+            StructuredLyrics(lang: "en", synced: true, line: [
+                Line(value: "a", start: 0),
+                Line(value: "b", start: 1000),
+                Line(value: "untimed"),
+                Line(value: "c", start: 2000)
+            ])
+        ])
+        let id = UUID()
+        let (vm, _) = try makeViewModel(serverId: id, lyrics: list)
+        await vm.load()
+
+        vm.update(elapsedMs: 1_500)
+        #expect(vm.currentLineIndex == 1)
+
+        vm.update(elapsedMs: 2_500)
+        #expect(vm.currentLineIndex == 3)
     }
 }
 
@@ -185,9 +251,19 @@ struct LyricsViewModelSeekTests {
         let (vm, playerService) = try makeViewModel(serverId: id, lyrics: syncedList(offset: 200))
         await vm.load()
 
-        vm.userTapped(lineIndex: 0) // start=0, offset=200 → (0+200)/1000 = 0.2s
+        vm.userTapped(lineIndex: 1) // start=1000ms, +200ms appears sooner → 0.8s
         try await Task.sleep(for: .milliseconds(50))
-        #expect(playerService.seekCalledWith == 0.2)
+        #expect(playerService.seekCalledWith == 0.8)
+    }
+
+    @Test func seekClampsPositiveOffsetBeforeTrackStart() async throws {
+        let id = UUID()
+        let (vm, playerService) = try makeViewModel(serverId: id, lyrics: syncedList(offset: 200))
+        await vm.load()
+
+        vm.userTapped(lineIndex: 0)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(playerService.seekCalledWith == 0)
     }
 
     @Test func noSeekOnUnsyncedState() async throws {
@@ -227,12 +303,24 @@ struct LyricsViewModelScrollTests {
         #expect(vm.isUserScrolling == true)
     }
 
-    @Test func isUserScrolling_resetAfter5Seconds() async throws {
+    @Test func userStoppedScrolling_resetsAfterGracePeriod() async throws {
         let (vm, _) = try makeViewModel()
         vm.userStartedScrolling()
         #expect(vm.isUserScrolling == true)
-        // Wait slightly over 5s for the Task.sleep to complete
-        try await Task.sleep(for: .seconds(5.1))
+        vm.userStoppedScrolling()
+        // Wait slightly over the three-second post-momentum grace period.
+        try await Task.sleep(for: .seconds(3.1))
+        #expect(vm.isUserScrolling == false)
+    }
+
+    @Test func hidingLyrics_clearsManualScrollState() throws {
+        let (vm, _) = try makeViewModel()
+        vm.setVisible(true)
+        vm.userStartedScrolling()
+        #expect(vm.isUserScrolling == true)
+
+        vm.setVisible(false)
+
         #expect(vm.isUserScrolling == false)
     }
 }
@@ -330,5 +418,25 @@ struct LyricsViewModelLoadTests {
         await vm.load()
         // applyCurrentLanguage with no structuredLyrics → .empty
         #expect(vm.state == .empty)
+    }
+
+    @Test func retry_discardsTheCachedResult() async throws {
+        let id = UUID()
+        let (vm, _) = try makeViewModel(serverId: id, lyrics: multiLanguageList())
+        await vm.load()
+
+        guard case .loaded = vm.state else {
+            Issue.record("Expected the cached load to succeed, got \(vm.state)")
+            return
+        }
+
+        // Retry bypasses the cache. The mock server throws on client creation, so the
+        // state has to move off .loaded — proving the cached entry was really dropped.
+        // Serving the cache here would mean a retry can never recover from a stale
+        // "no lyrics" result.
+        await vm.retry()
+        if case .loaded = vm.state {
+            Issue.record("retry() re-served the cache instead of re-querying")
+        }
     }
 }

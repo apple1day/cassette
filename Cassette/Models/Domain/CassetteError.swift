@@ -33,6 +33,24 @@ nonisolated enum CassetteError: Error, Sendable {
     case timeout
 }
 
+extension CassetteError {
+    /// True for errors that mean "this track can't be played right now"
+    /// — used by PlayerService to decide whether to skip to the next downloaded track
+    /// instead of surfacing an error state.
+    nonisolated var isPlaybackUnavailable: Bool {
+        switch self {
+        case .offlineUnavailable, .mediaNotFound, .connectionFailed:
+            return true
+        case .serverNotConfigured, .cacheStorageFailed, .downloadFailed,
+             .keychainReadFailed, .keychainWriteFailed, .keychainDeleteFailed,
+             .invalidServerURL, .invalidHeaderName, .invalidHeaderValue,
+             .serverNotFound, .notImplemented, .smartShuffleEmpty,
+             .instantMixEmpty, .artistTracksUnavailable, .timeout:
+            return false
+        }
+    }
+}
+
 extension CassetteError: LocalizedError {
     nonisolated var errorDescription: String? {
         switch self {

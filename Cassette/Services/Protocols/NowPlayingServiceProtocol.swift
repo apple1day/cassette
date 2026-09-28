@@ -26,4 +26,10 @@ protocol NowPlayingServiceProtocol: AnyObject, Sendable {
     /// touching title, artist, or artwork. Called on every periodic tick to prevent iOS
     /// extrapolation drift on the lock screen.
     func pushPosition(elapsed: TimeInterval, rate: Float, duration: TimeInterval) async
+
+    /// Overrides the now-playing track title with a lyric line, so surfaces that render only
+    /// `MPMediaItemPropertyTitle` (CarPlay, car head units, some Bluetooth radios) show the
+    /// current lyric instead of the song name. Pass `nil` to restore the real song title.
+    /// No-op for live streams, which have no lyrics.
+    func setLyricTitle(_ lyric: String?) async
 }

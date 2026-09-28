@@ -240,6 +240,27 @@ actor PlayerService: PlayerServiceProtocol {
         let source: MediaSource
         do {
             source = try await mediaResolver.resolve(songId: song.id, serverId: serverId)
+        } catch let e as CassetteError where e.isPlaybackUnavailable {
+            // Track can't be played right now (offline + not downloaded, media missing,
+            // or connection failed). Skip to the next downloaded track in the queue so
+            // playback keeps going instead of stranding the user on an error screen.
+            if let nextIndex = await findNextDownloadedIndex(
+                after: startIndex, in: tracks, serverId: serverId
+            ) {
+                Logger.player.info("[PLAYBACK] '\(song.id, privacy: .public)' unavailable offline — skipping to index \(nextIndex)")
+                await MainActor.run {
+                    toastService.show(
+                        "歌曲无法离线播放,已切换到下一首已下载歌曲",
+                        style: .info,
+                        duration: 2.5
+                    )
+                }
+                try await play(tracks: tracks, startIndex: nextIndex)
+                return
+            }
+            // No downloaded track in the queue → stop cleanly.
+            await stopDueToNoOfflineTracks()
+            return
         } catch let e as CassetteError {
             await MainActor.run { state.playbackState = .error(e) }
             throw e
@@ -249,6 +270,69 @@ actor PlayerService: PlayerServiceProtocol {
         }
 
         await startPlayback(song: song, source: source, serverId: serverId)
+    }
+
+    /// Finds the index of the next downloaded track after `startIndex` in the queue.
+    /// Scan order: startIndex+1 ... end, then 0 ... startIndex-1 (wrap-around).
+    /// Never re-tries `startIndex` itself — that track already failed to resolve.
+    private func findNextDownloadedIndex(
+        after startIndex: Int, in tracks: [DisplayableSong], serverId: UUID
+    ) async -> Int? {
+        let n = tracks.count
+        guard n > 1 else { return nil }
+        for offset in 1..<n {
+            let idx = (startIndex + offset) % n
+            let songId = tracks[idx].id
+            if await downloadService.isDownloaded(songId: songId, serverId: serverId) {
+                return idx
+            }
+        }
+        return nil
+    }
+
+    /// Queue has no downloaded tracks and the server is unreachable → stop playback
+    /// and tell the user why. Mirrors `pauseAtEndOfQueue()` cleanup but resets state
+    /// to idle (not paused) since there is nothing left to resume.
+    private func stopDueToNoOfflineTracks() async {
+        Logger.player.info("[PLAYBACK] No downloaded tracks available — stopping playback")
+        await recordCurrentTrackPlayback(trigger: "no_offline_tracks")
+        wasTrackCompletedNaturally = false
+        accumulatedPlayedSeconds = 0
+        currentPlaySegmentStart = nil
+        trackPlayStartDate = nil
+
+        cancelFadeTasks()
+        stopProgressTimer()
+        stopPositionSaveTimer()
+        cancelPendingScrobble()
+        cancelPendingCacheDownload()
+        cancelPendingPrefetch()
+        audioPlayer.stop()
+        #if os(iOS)
+        sessionActivationRetryTask?.cancel()
+        sessionActivationRetryTask = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        #endif
+        pendingRestoreInfo = nil
+        stoppedAtEndOfQueue = true
+
+        await MainActor.run {
+            state.playbackState = .idle
+            state.currentTrack = nil
+            state.queue = []
+            state.currentIndex = 0
+            state.position = 0
+            state.duration = 0
+            toastService.show(
+                "无离线歌曲,已停止播放",
+                style: .error,
+                duration: 3.0
+            )
+        }
+        await saveSession()
+        if let ws = widgetSyncService {
+            Task { [weak ws] in await ws?.onPlayStateChanged(isPlaying: false, currentSong: nil) }
+        }
     }
 
     private func startPlayback(song: DisplayableSong, source: MediaSource, serverId: UUID) async {
@@ -1107,6 +1191,38 @@ actor PlayerService: PlayerServiceProtocol {
         await saveSession()
     }
 
+    /// Sets the unified three-state playback mode and keeps the underlying `repeatMode` + `isShuffled`
+    /// in sync. Entering/leaving shuffle reorders the queue (preserving the current track). Mirrors the
+    /// loop-aware auto-extend gating from `setRepeatMode` so auto-extend only runs in non-loop modes.
+    func setPlaybackMode(_ mode: PlaybackMode) async {
+        guard await MainActor.run(body: { !state.isLiveStream }) else {
+            Logger.player.debug("setPlaybackMode ignored — live stream mode")
+            return
+        }
+        let (current, wasLoop) = await MainActor.run { (state.playbackMode, state.repeatMode != .off) }
+        guard current != mode else { return }
+        let willLoop = mode.isLoopMode
+
+        switch mode {
+        case .list:
+            if await MainActor.run(body: { state.isShuffled }) { await restoreOriginalQueueOrder() }
+            await MainActor.run { state.repeatMode = .off; state.isShuffled = false }
+        case .single:
+            if await MainActor.run(body: { state.isShuffled }) { await restoreOriginalQueueOrder() }
+            await MainActor.run { state.repeatMode = .one; state.isShuffled = false }
+        case .shuffle:
+            if await MainActor.run(body: { !state.isShuffled }) { await shuffleUpNext() }
+            await MainActor.run { state.repeatMode = .off; state.isShuffled = true }
+        }
+
+        if !wasLoop && willLoop {
+            await truncateExtensions()
+        } else if wasLoop && !willLoop {
+            await evaluateAutoExtend()
+        }
+        await saveSession()
+    }
+
     private func shuffleUpNext() async {
         let (queue, currentIndex) = await MainActor.run { (state.queue, state.currentIndex) }
         originalQueueOrder = queue
@@ -1262,7 +1378,8 @@ actor PlayerService: PlayerServiceProtocol {
                 currentPosition: state.position,
                 queue: state.queue,
                 currentTrack: state.currentTrack,
-                repeatMode: state.repeatMode
+                repeatMode: state.repeatMode,
+                playbackMode: state.playbackMode
             )
         }
         await sessionService.save(playerState: snapshot)
@@ -1280,6 +1397,7 @@ actor PlayerService: PlayerServiceProtocol {
             state.position = data.currentPosition
             state.duration = data.currentTrackDuration
             state.repeatMode = data.repeatMode
+            state.isShuffled = data.playbackMode == .shuffle
             state.playbackState = .paused
         }
 

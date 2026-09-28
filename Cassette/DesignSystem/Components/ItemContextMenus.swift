@@ -91,13 +91,6 @@ struct SongContextPreview: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-
-                if let albumName = song.albumName {
-                    Text(albumName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
             }
         }
         .padding(CassetteSpacing.l)

@@ -14,6 +14,9 @@ final class LyricsViewModel {
     private let playerState: PlayerState
     private let songId: String
     private let serverId: UUID
+    /// Song metadata, used only by the legacy `getLyrics` fallback — see ``LyricsService``.
+    private let title: String?
+    private let artist: String?
 
     private(set) var state: State = .loading
     private(set) var currentLineIndex: Int?
@@ -21,6 +24,9 @@ final class LyricsViewModel {
     var selectedLanguage: String?
     var autoScrollEnabled: Bool = true
     private(set) var isUserScrolling: Bool = false
+    /// True while a manual refresh (see ``refresh()``) is in flight. Exposed so the
+    /// lyrics header can show a spinner instead of flashing back to the loading state.
+    private(set) var isRefreshing: Bool = false
 
     private var lyricsList: LyricsList?
     private var trackingTimer: Timer?
@@ -40,13 +46,17 @@ final class LyricsViewModel {
         serverId: UUID,
         lyricsService: LyricsService,
         playerService: any PlayerServiceProtocol,
-        playerState: PlayerState
+        playerState: PlayerState,
+        title: String? = nil,
+        artist: String? = nil
     ) {
         self.songId = songId
         self.serverId = serverId
         self.lyricsService = lyricsService
         self.playerService = playerService
         self.playerState = playerState
+        self.title = title
+        self.artist = artist
     }
 
     // MARK: - Load
@@ -54,7 +64,12 @@ final class LyricsViewModel {
     func load() async {
         state = .loading
         do {
-            let list = try await lyricsService.fetchLyrics(forSongId: songId, serverId: serverId)
+            let list = try await lyricsService.fetchLyrics(
+                forSongId: songId,
+                serverId: serverId,
+                title: title,
+                artist: artist
+            )
             lyricsList = list
             applyCurrentLanguage()
         } catch LyricsError.notSupportedByServer {
@@ -68,6 +83,45 @@ final class LyricsViewModel {
         }
     }
 
+    /// Clears the cached result for this song and loads again.
+    ///
+    /// Without the invalidation step a retry would keep serving the negative cache —
+    /// including the "no lyrics" entry written the last time every source came back
+    /// empty — and the user would see no change.
+    func retry() async {
+        await lyricsService.invalidate(songId: songId, serverId: serverId)
+        await load()
+    }
+
+    /// Force a re-fetch from the server, bypassing the cache TTL, without losing the
+    /// lyrics currently on screen.
+    ///
+    /// This is the answer to "the app won't show lyrics the server just updated": the
+    /// cache keeps serving the previous result until its TTL expires (synced lyrics
+    /// live for 7 days), so after Navidrome scans a new or edited `.lrc` sidecar the
+    /// player silently shows stale words. Invalidating first makes the next fetch go
+    /// to the network. Unlike ``retry()`` this does not reset the view to `.loading`,
+    /// so the existing lines stay visible (with a spinner in the header) until the
+    /// fresh set arrives — or, on failure, they simply remain.
+    func refresh() async {
+        isRefreshing = true
+        defer { isRefreshing = false }
+        await lyricsService.invalidate(songId: songId, serverId: serverId)
+        do {
+            let list = try await lyricsService.fetchLyrics(
+                forSongId: songId,
+                serverId: serverId,
+                title: title,
+                artist: artist
+            )
+            lyricsList = list
+            applyCurrentLanguage()
+        } catch {
+            // Keep showing whatever we had. Empty/error states already surface a retry
+            // control, and the user can pull this refresh again.
+        }
+    }
+
     // MARK: - Line tracking
 
     func update(elapsedMs: Int) {
@@ -75,9 +129,52 @@ final class LyricsViewModel {
             currentLineIndex = nil
             return
         }
-        let adjustedMs = elapsedMs - structured.offset
-        var newIndex: Int? = nil
-        for (index, line) in structured.line.enumerated() {
+        let newIndex = lineIndex(
+            // OpenSubsonic defines a positive offset as "lyrics appear sooner".
+            // A line stamped at 10 s with +500 ms therefore becomes active at
+            // 9.5 s: elapsed + offset is compared with the stored line start.
+            for: elapsedMs + structured.offset,
+            in: structured.line
+        )
+        if newIndex != currentLineIndex {
+            currentLineIndex = newIndex
+        }
+    }
+
+    /// Index of the last line whose start time has passed, or `nil` before the first line.
+    ///
+    /// Binary search, because this runs on a 10 Hz timer and a long track can carry
+    /// several hundred lines.
+    ///
+    /// The search assumes ascending start times. Synced sets satisfy that; a line with
+    /// no start time does not, and bisecting past one can skip the correct line
+    /// entirely — so the search bails out to ``linearIndex(for:in:)`` the moment it
+    /// meets one. Behaviour is then identical to the linear walk it replaces.
+    private func lineIndex(for adjustedMs: Int, in lines: [Line]) -> Int? {
+        var low = 0
+        var high = lines.count - 1
+        var found: Int?
+
+        while low <= high {
+            let mid = (low + high) / 2
+            guard let start = lines[mid].start else {
+                return linearIndex(for: adjustedMs, in: lines)
+            }
+            if start <= adjustedMs {
+                found = mid
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+
+        return found
+    }
+
+    /// The straightforward walk, kept for line sets that carry an unsynced line.
+    private func linearIndex(for adjustedMs: Int, in lines: [Line]) -> Int? {
+        var newIndex: Int?
+        for (index, line) in lines.enumerated() {
             guard let start = line.start else { continue }
             if start <= adjustedMs {
                 newIndex = index
@@ -85,9 +182,7 @@ final class LyricsViewModel {
                 break
             }
         }
-        if newIndex != currentLineIndex {
-            currentLineIndex = newIndex
-        }
+        return newIndex
     }
 
     // MARK: - Seek
@@ -96,7 +191,9 @@ final class LyricsViewModel {
         guard case .loaded(let structured) = state, structured.synced else { return }
         guard lineIndex < structured.line.count else { return }
         guard let startMs = structured.line[lineIndex].start else { return }
-        let targetSeconds = TimeInterval(startMs + structured.offset) / 1000.0
+        // Inverse of update(elapsedMs:): seek to the playback instant at which
+        // this line becomes active. Clamp pre-roll lines to the start of media.
+        let targetSeconds = max(0, TimeInterval(startMs - structured.offset) / 1000.0)
         Task { [weak self] in
             await self?.playerService.seek(to: targetSeconds)
         }
@@ -107,15 +204,19 @@ final class LyricsViewModel {
     func userStartedScrolling() {
         isUserScrolling = true
         resumeTask?.cancel()
+        resumeTask = nil
+    }
+
+    func userStoppedScrolling() {
+        // Keep the manually selected reading position for a short grace period after
+        // momentum has completely stopped, then let LyricsView centre the current line.
+        // Starting this timer on touch-down allowed it to expire during a long drag.
+        resumeTask?.cancel()
         resumeTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled else { return }
             await MainActor.run { self?.isUserScrolling = false }
         }
-    }
-
-    func userStoppedScrolling() {
-        userStartedScrolling()
     }
 
     // MARK: - Language selection
@@ -143,6 +244,13 @@ final class LyricsViewModel {
         if !visible {
             resumeTask?.cancel()
             resumeTask = nil
+            // Do not carry a cancelled manual-scroll state into the next presentation;
+            // without this reset auto-follow can remain disabled forever after dismissal.
+            isUserScrolling = false
+        } else {
+            // A paused player has no tracking timer. Sample once on appearance so
+            // opening lyrics while paused still highlights and centres the right line.
+            update(elapsedMs: Int(playerState.position * 1000))
         }
         reconcileTracking()
     }
@@ -185,6 +293,9 @@ final class LyricsViewModel {
         let best = lyricsService.selectBestLanguage(from: list, preferred: selectedLanguage)
         currentLineIndex = nil
         state = best.map { .loaded($0) } ?? .empty
+        // Keep language switches and a completed async load aligned immediately,
+        // including while playback is paused (when no timer will fire).
+        update(elapsedMs: Int(playerState.position * 1000))
         // Lyrics (and their synced-ness) just changed — start the timer if it should now run.
         reconcileTracking()
     }

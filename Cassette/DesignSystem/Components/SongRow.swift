@@ -20,6 +20,12 @@ struct SongRow: View {
     var isFavorite: Bool = false
     var titleColor: Color = .primary
     var secondaryColor: Color = .secondary
+    /// Optional qualified play count shown in the subtitle. The local-download screen uses this
+    /// for listens where at least 60% of the track was actually played.
+    var playCount: Int? = nil
+    /// Optional early-skip count. A skip is recorded when playback entered `.playing`, accumulated
+    /// less than 15 seconds, and the user moved to another song before the natural end.
+    var skipCount: Int? = nil
     let onDownload: (() -> Void)?
     let onRemoveDownload: (() -> Void)?
     var isDownloading: Bool = false
@@ -34,7 +40,7 @@ struct SongRow: View {
     @State private var isHovered = false
     #endif
 
-    init(song: DisplayableSong, index: Int, showCoverArt: Bool = false, showArtist: Bool = true, isFavorite: Bool = false, titleColor: Color = .primary, secondaryColor: Color = .secondary, onDownload: (() -> Void)? = nil, onRemoveDownload: (() -> Void)? = nil, isDownloading: Bool = false, onRemoveFromPlaylist: (() -> Void)? = nil, onAddToPlaylist: ((DisplayableSong) -> Void)? = nil) {
+    init(song: DisplayableSong, index: Int, showCoverArt: Bool = false, showArtist: Bool = true, isFavorite: Bool = false, titleColor: Color = .primary, secondaryColor: Color = .secondary, playCount: Int? = nil, skipCount: Int? = nil, onDownload: (() -> Void)? = nil, onRemoveDownload: (() -> Void)? = nil, isDownloading: Bool = false, onRemoveFromPlaylist: (() -> Void)? = nil, onAddToPlaylist: ((DisplayableSong) -> Void)? = nil) {
         self.song = song
         self.index = index
         self.showCoverArt = showCoverArt
@@ -42,6 +48,8 @@ struct SongRow: View {
         self.isFavorite = isFavorite
         self.titleColor = titleColor
         self.secondaryColor = secondaryColor
+        self.playCount = playCount
+        self.skipCount = skipCount
         self.onDownload = onDownload
         self.onRemoveDownload = onRemoveDownload
         self.isDownloading = isDownloading
@@ -111,16 +119,38 @@ struct SongRow: View {
                     #endif
                     .foregroundStyle(isCurrentTrack ? playingAccent : titleColor)
                     .lineLimit(1)
-                if showArtist, let artist = song.artist {
-                    Text(artist)
-                        #if os(macOS)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        #else
-                        .font(.cassetteCaption)
-                        .foregroundStyle(secondaryColor)
-                        #endif
-                        .lineLimit(1)
+
+                if (showArtist && song.artist != nil) || playCount != nil || skipCount != nil {
+                    HStack(spacing: 4) {
+                        if showArtist, let artist = song.artist {
+                            Text(artist)
+                                .lineLimit(1)
+                        }
+                        if showArtist, song.artist != nil, playCount != nil || skipCount != nil {
+                            Text("·")
+                        }
+                        if let playCount {
+                            Text("完播 \(playCount) 次")
+                                .monospacedDigit()
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                        if playCount != nil, skipCount != nil {
+                            Text("·")
+                        }
+                        if let skipCount {
+                            Text("切歌 \(skipCount) 次")
+                                .monospacedDigit()
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                    }
+                    #if os(macOS)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    #else
+                    .font(.cassetteCaption)
+                    .foregroundStyle(secondaryColor)
+                    #endif
+                    .lineLimit(1)
                 }
             }
 

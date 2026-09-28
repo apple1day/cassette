@@ -16,8 +16,8 @@ struct MiniPlayerAccessoryView: View {
     private let swipeThreshold: CGFloat = 100
     private let velocityThreshold: CGFloat = 200
 
-    // System-adaptive content colours so they read on the accessory's translucent glass over ANY backdrop
-    // (dark on the light Home, light in dark mode) — an explicit black/white can't track what's behind it.
+    // iOS 26 supplies the accessory's glass surface, so its content stays adaptive.
+    // The iOS 18 floating host explicitly supplies a dark colour scheme in MainTabView.
     private var typoColor: Color { .primary }
     private var typoSecondaryColor: Color { .secondary }
 
@@ -42,12 +42,13 @@ struct MiniPlayerAccessoryView: View {
         let title = isLiveStream ? (playerState.currentRadio?.name ?? "") : (playerState.currentTrack?.title ?? "")
         let artist: String? = isLiveStream ? "Live Radio" : playerState.currentTrack?.artist
         let audioFormat: String? = isLiveStream ? nil : playerState.currentTrack?.audioFormat
+        let isDownloaded = playerState.currentTrack?.isDownloaded == true
         let isPlaying = playerState.playbackState == .playing
         let isAvailable = playerState.isPlaybackAvailable
 
         Group {
             if isInline {
-                inlineBar(coverArtId: coverArtId, title: title, artist: artist, audioFormat: audioFormat, isPlaying: isPlaying, isAvailable: isAvailable, isLiveStream: isLiveStream)
+                inlineBar(coverArtId: coverArtId, title: title, artist: artist, audioFormat: audioFormat, isDownloaded: isDownloaded, isPlaying: isPlaying, isAvailable: isAvailable, isLiveStream: isLiveStream)
                     .transition(.opacity)
             } else {
                 expandedBar(playerState: playerState, coverArtId: coverArtId, title: title, artist: artist, audioFormat: audioFormat, isPlaying: isPlaying, isAvailable: isAvailable, isLiveStream: isLiveStream)
@@ -62,7 +63,7 @@ struct MiniPlayerAccessoryView: View {
         .gesture(isAvailable && !isLiveStream ? swipeSkipGesture : nil)
     }
 
-    private func inlineBar(coverArtId: String, title: String, artist: String?, audioFormat: String?, isPlaying: Bool, isAvailable: Bool, isLiveStream: Bool) -> some View {
+    private func inlineBar(coverArtId: String, title: String, artist: String?, audioFormat: String?, isDownloaded: Bool, isPlaying: Bool, isAvailable: Bool, isLiveStream: Bool) -> some View {
         HStack(spacing: CassetteSpacing.m) {
             CoverArtCard(id: coverArtId, size: 36)
                 .opacity(isAvailable ? 1.0 : 0.5)
@@ -85,6 +86,12 @@ struct MiniPlayerAccessoryView: View {
                                 .foregroundStyle(typoSecondaryColor)
                                 .lineLimit(1)
                         }
+                        if isDownloaded {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(typoSecondaryColor)
+                                .accessibilityLabel("本地播放")
+                        }
                     }
                 }
             }
@@ -104,7 +111,7 @@ struct MiniPlayerAccessoryView: View {
             : playerState.position / playerState.duration
         return VStack(spacing: 0) {
             HStack(alignment: .center, spacing: CassetteSpacing.m) {
-                CoverArtCard(id: coverArtId, size: 36)
+                CoverArtCard(id: coverArtId, size: 48)
                     .opacity(isAvailable ? 1.0 : 0.5)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -124,6 +131,12 @@ struct MiniPlayerAccessoryView: View {
                                     .font(.cassetteCaption)
                                     .foregroundStyle(typoSecondaryColor)
                                     .lineLimit(1)
+                            }
+                            if playerState.currentTrack?.isDownloaded == true {
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(typoSecondaryColor)
+                                    .accessibilityLabel("本地播放")
                             }
                         }
                     }
@@ -146,10 +159,10 @@ struct MiniPlayerAccessoryView: View {
                         .accessibilityLabel("Skip to next")
                     }
                 }
-                .frame(height: 36)
+                .frame(height: 48)
             }
             .padding(.horizontal, CassetteSpacing.l)
-            .padding(.vertical, CassetteSpacing.m)
+            .padding(.vertical, CassetteSpacing.s)
 
             if isLiveStream {
                 HStack(spacing: CassetteSpacing.xs) {
@@ -157,7 +170,7 @@ struct MiniPlayerAccessoryView: View {
                     Text("LIVE")
                         .font(.caption2)
                         .fontWeight(.bold)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.cassetteAccent)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, CassetteSpacing.l)

@@ -34,6 +34,26 @@ private struct PlayerThemeKey: Equatable {
     let override: Color?
 }
 
+private extension View {
+    /// Adds the auto-lyrics tap-to-restore gesture. In auto ('karaoke') mode a tap anywhere
+    /// dismisses the panel; in manual mode only a tap on empty space does (a tap on a lyric line
+    /// still seeks). `contentShape` keeps the full slot hit-testable past the fade mask.
+    @ViewBuilder
+    func lyricsTapToDismiss(isAutoLyricsMode: Bool, onDismiss: @escaping () -> Void) -> some View {
+        // Keep `content` inside the conditional branches. A standalone expression here
+        // plus another expression in the branch makes ViewBuilder return TWO copies of
+        // the complete LyricsView. They initially overlap, then separate as soon as only
+        // one ScrollView responds to a vertical drag — the visible double/ghosted lyrics.
+        if isAutoLyricsMode {
+            contentShape(Rectangle())
+                .highPriorityGesture(TapGesture().onEnded { onDismiss() })
+        } else {
+            contentShape(Rectangle())
+                .onTapGesture { onDismiss() }
+        }
+    }
+}
+
 struct FullPlayerView: View {
     @Environment(\.appContainer) private var container
     @Environment(DominantColorExtractor.self) private var colorExtractor
@@ -43,6 +63,12 @@ struct FullPlayerView: View {
 
     @State private var vm = FullPlayerViewModel()
     @State private var showLyrics = false
+    /// True once the lyrics panel has been auto-opened for the current track. Stays true after a
+    /// tap-dismiss so the panel doesn't immediately re-engage on the next position tick. Reset on
+    /// track change.
+    @State private var hasAutoEngagedLyrics = false
+    /// True while the lyrics panel is in the auto ('karaoke') state, so a tap anywhere dismisses it.
+    @State private var isAutoLyricsMode = false
     @State private var surface: PlayerSurface = .player
     @State private var lyricsViewModel: LyricsViewModel?
     @Namespace private var morphNS
@@ -74,6 +100,8 @@ struct FullPlayerView: View {
                     await vm.updateColors(for: themeCoverId, colorExtractor: colorExtractor, container: container)
                 }
                 .task(id: playerState.currentTrack?.id) {
+                    isAutoLyricsMode = false
+                    hasAutoEngagedLyrics = false
                     guard let track = playerState.currentTrack,
                           let serverId = container?.serverState.activeServer?.id,
                           let lyricsService = container?.lyricsService,
@@ -86,10 +114,16 @@ struct FullPlayerView: View {
                         serverId: serverId,
                         lyricsService: lyricsService,
                         playerService: playerService,
-                        playerState: playerState
+                        playerState: playerState,
+                        title: track.title,
+                        artist: track.artist
                     )
                     lyricsViewModel = newVM
                     await newVM.load()
+                }
+                // Auto-engage the fullscreen lyrics panel once playback passes 15 s.
+                .onChange(of: playerState.position) { _, position in
+                    autoEngageLyricsIfNeeded(position: position, playerState: playerState)
                 }
         }
     }
@@ -185,7 +219,7 @@ struct FullPlayerView: View {
                     // Content branches crossfade (lyrics / queue body). The cover is NOT in this if/else — it
                     // is hoisted below so it never follows a branch's removal (which sent it off-screen).
                     if showLyrics, let lyricsVM = lyricsViewModel {
-                        LyricsView(viewModel: lyricsVM)
+                        LyricsView(viewModel: lyricsVM, foregroundColor: vm.contentColor)
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 20)
                             .mask(
@@ -201,6 +235,7 @@ struct FullPlayerView: View {
                                 )
                             )
                             .transition(.opacity)
+                            .lyricsTapToDismiss(isAutoLyricsMode: isAutoLyricsMode, onDismiss: { dismissLyrics() })
                     } else if showingQueue {
                         flowingQueueContent(playerState)
                             .transition(.opacity)
@@ -343,6 +378,10 @@ struct FullPlayerView: View {
                 // Fill the width and run slightly TALLER than square (1.12×) so the cover has more presence and
                 // its bottom melt starts lower down the screen. Definite size (not greedy) keeps the controls placed.
                 .frame(width: isSource ? min(geo.size.width, geo.size.height) : nil, height: isSource ? min(geo.size.width, geo.size.height) * 1.20 : nil)
+                // Only the artwork pages horizontally. The adjacent queue cover follows
+                // the finger from the corresponding edge while the metadata and transport
+                // controls stay anchored, matching mainstream music-player behaviour.
+                .trackSkipSwipe(playerState: playerState, enabled: isSource)
                 // Rounded corners on the small flown cover in the queue header; sharp full-bleed on the player.
                 .clipShape(RoundedRectangle(cornerRadius: isSource ? 0 : CassetteCornerRadius.standard))
                 // Light blurred melt at the bottom: a thin strip of the cover blurs and fades into the dominant
@@ -469,7 +508,7 @@ struct FullPlayerView: View {
 
             ZStack {
                 if showLyrics, let lyricsVM = lyricsViewModel {
-                    LyricsView(viewModel: lyricsVM)
+                    LyricsView(viewModel: lyricsVM, foregroundColor: vm.contentColor)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 20)
                         .mask(
@@ -485,6 +524,7 @@ struct FullPlayerView: View {
                             )
                         )
                         .transition(.opacity)
+                        .lyricsTapToDismiss(isAutoLyricsMode: isAutoLyricsMode, onDismiss: { dismissLyrics() })
                 } else {
                     Color.clear
                         .aspectRatio(1, contentMode: .fit)
@@ -505,7 +545,6 @@ struct FullPlayerView: View {
                         .scaleEffect(isPlaying ? 1.0 : 0.92)
                         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isPlaying)
                         .transition(.opacity)
-                        .trackSkipSwipe(playerState: playerState)
                         .padding(.horizontal, coverHPadding)
                 }
             }
@@ -593,13 +632,10 @@ struct FullPlayerView: View {
 
     private func queuePills(_ playerState: PlayerState) -> some View {
         HStack(spacing: CassetteSpacing.s) {
-            queuePill(systemImage: "shuffle", isActive: playerState.isShuffled,
-                      label: playerState.isShuffled ? "Shuffle On" : "Shuffle Off") {
-                Task { await container?.playerService.toggleShuffle() }
-            }
-            queuePill(systemImage: playerState.repeatMode.systemImage, isActive: playerState.repeatMode != .off,
-                      label: "Repeat") {
-                Task { await container?.playerService.setRepeatMode(playerState.repeatMode.next) }
+            queuePill(systemImage: playerState.playbackMode.systemImage,
+                      isActive: playerState.playbackMode != .list,
+                      label: playerState.playbackMode.title) {
+                Task { await container?.playerService.setPlaybackMode(playerState.playbackMode.next) }
             }
             queuePill(systemImage: "infinity", isActive: playerState.isAutoExtendEnabled,
                       label: "Auto-extend with Smart Shuffle") {
@@ -638,12 +674,6 @@ struct FullPlayerView: View {
             Text("Up Next")
                 .font(.cassetteSectionTitle)
                 .foregroundStyle(vm.contentColor)
-            if let album = playerState.currentTrack?.albumName, !album.isEmpty {
-                Text(album)
-                    .font(.cassetteCaption)
-                    .foregroundStyle(vm.secondaryContentColor)
-                    .lineLimit(1)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -651,12 +681,11 @@ struct FullPlayerView: View {
     private func queueStatusLine(_ playerState: PlayerState) -> some View {
         let upNextCount = max(playerState.queue.count - playerState.currentIndex - 1, 0)
         var bits: [String] = ["\(upNextCount) up next"]
-        if playerState.repeatMode == .all {
-            bits.append("Repeating all")
-        } else if playerState.repeatMode == .one {
-            bits.append("Repeating one")
+        switch playerState.playbackMode {
+        case .single:  bits.append("Repeat One")
+        case .shuffle: bits.append("Shuffle")
+        case .list:    break
         }
-        if playerState.isShuffled { bits.append("Shuffled") }
         if playerState.isAutoExtendEnabled { bits.append("Auto-extend on") }
         return Text(bits.joined(separator: " · "))
             .font(.cassetteCaption)
@@ -726,6 +755,34 @@ struct FullPlayerView: View {
         .accessibilityLabel("Close player")
     }
 
+    // MARK: - Auto fullscreen lyrics
+
+    /// Engages the lyrics panel automatically once playback passes 15 s (once per track), provided
+    /// the current lyrics are time-synced. Guards so it only fires on the player surface, for a
+    /// real (non-radio) track, while actually playing, and once per track.
+    private func autoEngageLyricsIfNeeded(position: TimeInterval, playerState: PlayerState) {
+        guard surface == .player,
+              !playerState.isLiveStream,
+              playerState.playbackState == .playing,
+              position >= 15,
+              !showLyrics,
+              !hasAutoEngagedLyrics else { return }
+        guard let lyricsViewModel,
+              case .loaded(let structured) = lyricsViewModel.state,
+              structured.synced,
+              !structured.line.isEmpty else { return }
+        hasAutoEngagedLyrics = true
+        isAutoLyricsMode = true
+        withAnimation(.smooth(duration: 0.3)) { showLyrics = true }
+    }
+
+    /// Restores the cover view and clears the auto-lyrics flag (so the panel doesn't immediately
+    /// re-engage for the same track).
+    private func dismissLyrics() {
+        withAnimation(.smooth(duration: 0.3)) { showLyrics = false }
+        isAutoLyricsMode = false
+    }
+
 }
 
 // MARK: - Track info section (own @Query for reactive favorite state)
@@ -740,7 +797,6 @@ private struct TrackInfoSection: View {
     @Query private var favoriteMatches: [FavoriteRecord]
     @Environment(ArtworkImageCache.self) private var artworkImageCache
     @State private var songToAddToPlaylist: DisplayableSong?
-    @State private var showAlbumSheet = false
 
     init(playerState: PlayerState, container: AppContainer?, contentColor: Color, secondaryContentColor: Color, compact: Bool = false) {
         self.playerState = playerState
@@ -794,6 +850,15 @@ private struct TrackInfoSection: View {
                             if let format = playerState.currentTrack?.audioFormat {
                                 AudioFormatBadge(format: format, color: secondaryContentColor)
                             }
+                            if playerState.currentTrack?.isDownloaded == true {
+                                Label("本地", systemImage: "arrow.down.circle.fill")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(secondaryContentColor)
+                                    .padding(.horizontal, CassetteSpacing.s)
+                                    .padding(.vertical, 3)
+                                    .background(.white.opacity(0.12), in: Capsule())
+                                    .accessibilityLabel("已下载，可离线播放")
+                            }
                         }
                     }
                 }
@@ -827,11 +892,6 @@ private struct TrackInfoSection: View {
 
                 Menu {
                     if !playerState.isLiveStream {
-                        Button("Go to Album", systemImage: "square.stack") {
-                            guard playerState.currentTrack?.albumId != nil else { return }
-                            showAlbumSheet = true
-                        }
-                        .disabled(playerState.currentTrack?.albumId == nil || !isOnline)
                         Button("Go to Artist", systemImage: "music.mic") {
                             goToArtist()
                         }
@@ -862,19 +922,6 @@ private struct TrackInfoSection: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("More options")
-            }
-        }
-        .sheet(isPresented: $showAlbumSheet) {
-            if let track = playerState.currentTrack,
-               let albumId = track.albumId,
-               let albumName = track.albumName {
-                #if os(macOS)
-                AlbumDetailMacOS(albumId: albumId, albumName: albumName, coverArtId: track.coverArtId)
-                #else
-                NavigationStack {
-                    AlbumDetailView(albumId: albumId, albumName: albumName, coverArtId: track.coverArtId)
-                }
-                #endif
             }
         }
         .sheet(item: $songToAddToPlaylist) { song in
@@ -1097,6 +1144,25 @@ private struct PlaybackControlsView: View {
     var body: some View {
         HStack(spacing: CassetteSpacing.xxxxl) {
             if !playerState.isLiveStream {
+                #if os(iOS)
+                Button {
+                    HapticFeedback.light.trigger()
+                    Task { await playerService?.setPlaybackMode(playerState.playbackMode.next) }
+                } label: {
+                    Image(systemName: playerState.playbackMode.systemImage)
+                        .font(.title3)
+                        .foregroundStyle(
+                            playerState.playbackMode != .list
+                                ? CassetteColors.accentForeground(on: contentColor)
+                                : secondaryContentColor
+                        )
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .disabled(!isPlaybackAvailable)
+                .accessibilityLabel("Playback mode: \(playerState.playbackMode.accessibilityLabel)")
+                #endif
+
                 Button {
                     HapticFeedback.light.trigger()
                     Task { try? await playerService?.skipToPrevious() }

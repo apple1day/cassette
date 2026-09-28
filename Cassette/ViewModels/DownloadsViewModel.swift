@@ -6,21 +6,21 @@
 import Foundation
 import SwiftData
 
-nonisolated struct DownloadedPlaylistDTO: Identifiable, Sendable {
+nonisolated struct DownloadedSongDTO: Identifiable, Sendable {
     let id: UUID
-    let playlistId: String
+    let songId: String
     let serverId: UUID
-    let name: String
-    let tracksCount: Int
-    let totalTracksCount: Int
-    var isComplete: Bool { tracksCount == totalTracksCount }
+    let title: String
+    let artist: String?
+    let coverArtId: String?
+    let fileSize: Int64
+    let downloadedAt: Date
 }
 
 @Observable
 @MainActor
 final class DownloadsViewModel {
-    var displayAlbums: [DownloadedAlbumDisplay] = []
-    var downloadedPlaylists: [DownloadedPlaylistDTO] = []
+    var downloadedSongs: [DownloadedSongDTO] = []
     var usedBytesFormatted: String = "—"
     var isClearingAll = false
 
@@ -40,20 +40,22 @@ final class DownloadsViewModel {
 
     func loadData() async {
         let context = ModelContext(modelContainer)
-        let albums = (try? context.fetch(FetchDescriptor<DownloadedAlbum>())) ?? []
-        let playlists = (try? context.fetch(FetchDescriptor<DownloadedPlaylist>())) ?? []
-        let tracks = (try? context.fetch(FetchDescriptor<DownloadedTrack>())) ?? []
+        let allTracks = (try? context.fetch(FetchDescriptor<DownloadedTrack>())) ?? []
+        let activeServerId = serverState.activeServer?.id
+        let tracks = allTracks
+            .filter { activeServerId == nil || $0.serverId == activeServerId }
+            .sorted { $0.downloadedAt > $1.downloadedAt }
 
-        displayAlbums = DownloadedAlbumMerger.merge(records: albums, tracks: tracks)
-
-        downloadedPlaylists = playlists.map {
-            DownloadedPlaylistDTO(
+        downloadedSongs = tracks.map {
+            DownloadedSongDTO(
                 id: $0.id,
-                playlistId: $0.playlistId,
+                songId: $0.songId,
                 serverId: $0.serverId,
-                name: $0.name,
-                tracksCount: $0.tracksCount,
-                totalTracksCount: $0.totalTracksCount
+                title: $0.title,
+                artist: $0.artist,
+                coverArtId: $0.coverArtId,
+                fileSize: $0.fileSize,
+                downloadedAt: $0.downloadedAt
             )
         }
 
@@ -61,41 +63,40 @@ final class DownloadsViewModel {
         usedBytesFormatted = ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .file)
     }
 
-    func removeAlbum(_ display: DownloadedAlbumDisplay) async {
-        if display.hasFullDownloadIntent {
-            try? await downloadService.remove(albumId: display.albumId, serverId: display.serverId)
-        } else {
-            let context = ModelContext(modelContainer)
-            let aid = display.albumId
-            let sid = display.serverId
-            let tracks = (try? context.fetch(
-                FetchDescriptor<DownloadedTrack>(predicate: #Predicate { $0.albumId == aid && $0.serverId == sid })
-            )) ?? []
-            for track in tracks {
-                try? await downloadService.remove(songId: track.songId, serverId: track.serverId)
-            }
-        }
-        await loadData()
-    }
-
-    func removePlaylist(_ dto: DownloadedPlaylistDTO) async {
-        try? await downloadService.remove(playlistId: dto.playlistId, serverId: dto.serverId)
+    func removeSong(_ song: DownloadedSongDTO) async {
+        try? await downloadService.remove(songId: song.songId, serverId: song.serverId)
         await loadData()
     }
 
     func clearAll() async {
+        guard !isClearingAll else { return }
         isClearingAll = true
+        defer { isClearingAll = false }
+
         let context = ModelContext(modelContainer)
+        let activeServerId = serverState.activeServer?.id
+        let allTracks = (try? context.fetch(FetchDescriptor<DownloadedTrack>())) ?? []
+        let tracks = allTracks.filter { activeServerId == nil || $0.serverId == activeServerId }
+
+        // Snapshot song rows before deletion. Removing a track updates SwiftData immediately,
+        // so iterating a live query while awaiting could skip rows.
+        let songs = tracks.map { ($0.songId, $0.serverId) }
+        for (songId, serverId) in songs {
+            try? await downloadService.remove(songId: songId, serverId: serverId)
+        }
+
+        // Old builds persisted collection-level bookkeeping. It is no longer part of the
+        // user-facing offline model, but clean it after the song files are gone so upgrades do
+        // not retain stale "downloaded album/playlist" state.
         let albums = (try? context.fetch(FetchDescriptor<DownloadedAlbum>())) ?? []
-        for album in albums {
+        let playlists = (try? context.fetch(FetchDescriptor<DownloadedPlaylist>())) ?? []
+        for album in albums where activeServerId == nil || album.serverId == activeServerId {
             try? await downloadService.remove(albumId: album.albumId, serverId: album.serverId)
         }
-        // Remove any tracks not associated with an album record.
-        let remaining = (try? context.fetch(FetchDescriptor<DownloadedTrack>())) ?? []
-        for track in remaining {
-            try? await downloadService.remove(songId: track.songId, serverId: track.serverId)
+        for playlist in playlists where activeServerId == nil || playlist.serverId == activeServerId {
+            try? await downloadService.remove(playlistId: playlist.playlistId, serverId: playlist.serverId)
         }
+
         await loadData()
-        isClearingAll = false
     }
 }
