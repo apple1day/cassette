@@ -100,6 +100,54 @@ Join the beta: <https://testflight.apple.com/join/pxCpfpxF>
    - If your server sits behind a reverse proxy that needs custom request headers, expand **Advanced** and add them
    - Tap **Connect** — Cassette verifies the connection and stores credentials in the Keychain
 
+### 在 iPhone / iPad 上刷新开发签名
+
+本仓库根目录提供 [`refresh-cassette-signing.sh`](refresh-cassette-signing.sh)。
+它会备份匹配的描述文件，使用自动签名重新构建，验证主 App 和 Widget 的签名，
+再覆盖安装到指定真机；适用于本地开发安装的「小熊音乐 / Cassette」。
+
+**准备：** 使用 Xcode 26+，在 Xcode Settings → Accounts 登录原来的 Apple 账号；
+在 Cassette target 保留原来的 Team、Bundle Identifier，并开启 Automatically manage signing。
+保存工程后按 **Command + Q 完全退出 Xcode**，连接并解锁手机，确认已信任此 Mac、开启开发者模式。
+脚本还需要 `python3`；依赖由 Swift Package Manager 按仓库的 `Package.resolved` 解析。
+
+在仓库根目录执行：
+
+```bash
+git switch main
+git pull --ff-only origin main
+bash ./refresh-cassette-signing.sh
+```
+
+仅有一台可用真机时自动选中。连接多台设备时，脚本会列出 UDID，然后可指定：
+
+```bash
+bash ./refresh-cassette-signing.sh "$PWD" "你的设备UDID"
+```
+
+也可设置 `CASSETTE_DEVICE_ID`，或在其他目录通过脚本的绝对路径运行；省略项目目录时，
+始终使用脚本所在的仓库根目录。查看帮助：`bash ./refresh-cassette-signing.sh --help`。
+
+脚本从 **主 App 实际构建配置**读取 Bundle ID 和 Team，不使用工程文件中出现的第一条 Team。
+只备份该 Team 下主 App 及其明确子标识的描述文件，保留其他 App、其他 Team 和共享通配描述文件。
+现有桌面 `Cassette-Profiles-*` 目录无需传入或恢复；本次备份和日志会写到新的
+`~/Desktop/Cassette-Profiles-时间戳-PID/`，其中包含 `build.log`、`install.log` 和 `signing-result.json`。
+
+它使用 `-allowProvisioningUpdates` 请求 Apple 更新签名资产，清理专用构建输出后重新编译，
+并检查实际安装包及其 Widget 的 Bundle ID、Team、设备和描述文件到期时间。
+任何构建或校验失败都会停止安装。脚本不会卸载 App、撤销证书、改写工程签名配置，
+也不会清理全局 SPM 缓存；请保持原 Team 和 Bundle ID，使用覆盖安装保留现有数据。
+
+| 退出码 | 结果 |
+| --- | --- |
+| `0` | 重新签名并安装完成；打印实际到期时间。有完整旧记录时会比较有效期，否则明确说明无法比较。 |
+| `1` | 配置检查、构建、签名校验或设备安装失败，按终端信息和日志处理。 |
+| `2` | 安装完成，但 App 与 Widget 组合的有效期没有超过本机旧记录，不能据此认定已续期。 |
+
+最终期限由 Apple 签发的描述文件决定。脚本分别打印主 App 和 Widget 的日期，并按最早到期时间报告；
+手机上「我的 → 签名有效期」显示的是主 App 的到期日期，可点击「重新检查签名与提醒」读取新安装包的信息。
+本脚本面向 iOS 开发签名，与 macOS Developer ID 发布签名流程无关。
+
 ---
 
 ## Requirements
